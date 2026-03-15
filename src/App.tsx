@@ -27,7 +27,6 @@ const App = () => (
             <Route path="/map" element={<MapView />} />
             <Route path="/inspect" element={<InspectionForm />} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="/import" element={<OverpassImport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
