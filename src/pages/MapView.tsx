@@ -9,6 +9,8 @@ import { getStatusColor, mockReports } from '@/data/mockData';
 import { format, parseISO } from 'date-fns';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
+import RegulationsPanel from '@/components/RegulationsPanel';
+import NewsFeed from '@/components/NewsFeed';
 
 const severityIcons = {
   low: CheckCircle,
@@ -343,6 +345,16 @@ export default function MapView() {
                   ))}
                 </div>
               )}
+
+              {/* Regulations for this element type */}
+              <div className="mt-5">
+                <RegulationsPanel elementType={selectedElement.type} />
+              </div>
+
+              {/* Feed filtered to this airport */}
+              <div className="mt-5">
+                <NewsFeed airportId={selectedAirport.id} compact />
+              </div>
             </div>
           </motion.div>
         )}
