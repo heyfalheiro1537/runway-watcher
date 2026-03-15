@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle, Locate } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge, StatusLed } from '@/components/StatusBadge';
