@@ -180,6 +180,22 @@ export default function MapView() {
             );
           })}
 
+          {/* GPS Location dot */}
+          {gpsPosition && (() => {
+            // Map GPS to SVG space using first element as reference
+            const refEl = selectedAirport.elements[0];
+            if (!refEl) return null;
+            const refMatch = refEl.pathData.match(/M\s*(\d+)\s+(\d+)/);
+            if (!refMatch) return null;
+            const refSvgX = parseFloat(refMatch[1]);
+            const refSvgY = parseFloat(refMatch[2]);
+            // Scale: rough px per degree
+            const scale = 20000;
+            const dotX = refSvgX + (gpsPosition.lng - refEl.center.lng) * scale;
+            const dotY = refSvgY - (gpsPosition.lat - refEl.center.lat) * scale;
+            return <LocationDot cx={dotX} cy={dotY} heading={gpsPosition.heading} />;
+          })()}
+
           {/* Observation pins */}
           {allObservations.map(obs => {
             const pos = obsToSvg(obs);
