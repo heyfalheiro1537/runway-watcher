@@ -345,6 +345,16 @@ export default function MapView() {
                   ))}
                 </div>
               )}
+
+              {/* Regulations for this element type */}
+              <div className="mt-5">
+                <RegulationsPanel elementType={selectedElement.type} />
+              </div>
+
+              {/* Feed filtered to this airport */}
+              <div className="mt-5">
+                <NewsFeed airportId={selectedAirport.id} compact />
+              </div>
             </div>
           </motion.div>
         )}
