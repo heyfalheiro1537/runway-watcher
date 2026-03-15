@@ -5,6 +5,8 @@ import { AlertTriangle, CheckCircle, AlertOctagon, Clock, ArrowRight } from 'luc
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge } from '@/components/StatusBadge';
 import { format, parseISO, isThisWeek } from 'date-fns';
+import RegulationsPanel from '@/components/RegulationsPanel';
+import NewsFeed from '@/components/NewsFeed';
 
 export default function Dashboard() {
   const { selectedAirport, reports, role } = useAppState();
