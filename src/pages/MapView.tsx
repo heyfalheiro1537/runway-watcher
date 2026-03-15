@@ -20,6 +20,7 @@ const severityIcons = {
 export default function MapView() {
   const { selectedAirport, reports, role } = useAppState();
   const navigate = useNavigate();
+  const { position: gpsPosition } = useGeolocation();
   const [selectedElement, setSelectedElement] = useState<AirportElement | null>(null);
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
   const [viewBox, setViewBox] = useState({ x: 0, y: 0, w: 800, h: 500 });
