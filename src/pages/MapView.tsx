@@ -7,6 +7,8 @@ import { StatusBadge, SeverityBadge, StatusLed } from '@/components/StatusBadge'
 import { AirportElement, Observation, InspectionReport } from '@/types';
 import { getStatusColor, mockReports } from '@/data/mockData';
 import { format, parseISO } from 'date-fns';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
 
 const severityIcons = {
   low: CheckCircle,
