@@ -5,6 +5,8 @@ import { AlertTriangle, CheckCircle, AlertOctagon, Clock, ArrowRight } from 'luc
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge } from '@/components/StatusBadge';
 import { format, parseISO, isThisWeek } from 'date-fns';
+import RegulationsPanel from '@/components/RegulationsPanel';
+import NewsFeed from '@/components/NewsFeed';
 
 export default function Dashboard() {
   const { selectedAirport, reports, role } = useAppState();
@@ -136,6 +138,12 @@ export default function Dashboard() {
             </motion.div>
           ))}
         </div>
+      </div>
+
+      {/* Regulations & News Feed */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <RegulationsPanel />
+        <NewsFeed airportId={selectedAirport.id} />
       </div>
     </div>
   );

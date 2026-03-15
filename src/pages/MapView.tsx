@@ -7,6 +7,8 @@ import { StatusBadge, SeverityBadge, StatusLed } from '@/components/StatusBadge'
 import { AirportElement, Observation, InspectionReport } from '@/types';
 import { getStatusColor, mockReports } from '@/data/mockData';
 import { format, parseISO } from 'date-fns';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
 
 const severityIcons = {
   low: CheckCircle,
@@ -18,6 +20,7 @@ const severityIcons = {
 export default function MapView() {
   const { selectedAirport, reports, role } = useAppState();
   const navigate = useNavigate();
+  const { position: gpsPosition } = useGeolocation();
   const [selectedElement, setSelectedElement] = useState<AirportElement | null>(null);
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
   const [viewBox, setViewBox] = useState({ x: 0, y: 0, w: 800, h: 500 });
@@ -177,6 +180,22 @@ export default function MapView() {
             );
           })}
 
+          {/* GPS Location dot */}
+          {gpsPosition && (() => {
+            // Map GPS to SVG space using first element as reference
+            const refEl = selectedAirport.elements[0];
+            if (!refEl) return null;
+            const refMatch = refEl.pathData.match(/M\s*(\d+)\s+(\d+)/);
+            if (!refMatch) return null;
+            const refSvgX = parseFloat(refMatch[1]);
+            const refSvgY = parseFloat(refMatch[2]);
+            // Scale: rough px per degree
+            const scale = 20000;
+            const dotX = refSvgX + (gpsPosition.lng - refEl.center.lng) * scale;
+            const dotY = refSvgY - (gpsPosition.lat - refEl.center.lat) * scale;
+            return <LocationDot cx={dotX} cy={dotY} heading={gpsPosition.heading} />;
+          })()}
+
           {/* Observation pins */}
           {allObservations.map(obs => {
             const pos = obsToSvg(obs);
@@ -222,10 +241,18 @@ export default function MapView() {
           </svg>
         </div>
 
-        {/* Coordinates readout */}
-        <div className="absolute bottom-3 right-3 data-strip text-[9px]">
-          {selectedAirport.elements[0]?.center.lat.toFixed(4)}° N, {Math.abs(selectedAirport.elements[0]?.center.lng || 0).toFixed(4)}° W
-        </div>
+        {/* GPS Readout */}
+        {gpsPosition && (
+          <div className="absolute bottom-3 right-3">
+            <LocationReadout
+              lat={gpsPosition.lat}
+              lng={gpsPosition.lng}
+              accuracy={gpsPosition.accuracy}
+              heading={gpsPosition.heading}
+              speed={gpsPosition.speed}
+            />
+          </div>
+        )}
       </div>
 
       {/* Observation popup */}
