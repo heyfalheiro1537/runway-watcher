@@ -9,6 +9,8 @@ import { getStatusColor, mockReports } from '@/data/mockData';
 import { format, parseISO } from 'date-fns';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
+import RegulationsPanel from '@/components/RegulationsPanel';
+import NewsFeed from '@/components/NewsFeed';
 
 const severityIcons = {
   low: CheckCircle,
