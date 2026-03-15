@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle, Locate } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge, StatusLed } from '@/components/StatusBadge';
@@ -242,6 +242,27 @@ export default function MapView() {
             />
           </svg>
         </div>
+
+        {/* Locate me button */}
+        <button
+          onClick={() => {
+            if (!gpsPosition) return;
+            const refEl = selectedAirport.elements[0];
+            if (!refEl) return;
+            const refMatch = refEl.pathData.match(/M\s*(\d+)\s+(\d+)/);
+            if (!refMatch) return;
+            const refSvgX = parseFloat(refMatch[1]);
+            const refSvgY = parseFloat(refMatch[2]);
+            const scale = 20000;
+            const dotX = refSvgX + (gpsPosition.lng - refEl.center.lng) * scale;
+            const dotY = refSvgY - (gpsPosition.lat - refEl.center.lat) * scale;
+            setViewBox({ x: dotX - 200, y: dotY - 150, w: 400, h: 300 });
+          }}
+          className="absolute top-3 right-3 touch-target bezel p-2.5 rounded-full active:translate-y-0.5 transition-transform z-10"
+          title="Show my location"
+        >
+          <Locate size={18} className="text-primary" />
+        </button>
 
         {/* GPS Readout */}
         {gpsPosition && (
