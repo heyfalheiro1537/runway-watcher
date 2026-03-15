@@ -241,10 +241,18 @@ export default function MapView() {
           </svg>
         </div>
 
-        {/* Coordinates readout */}
-        <div className="absolute bottom-3 right-3 data-strip text-[9px]">
-          {selectedAirport.elements[0]?.center.lat.toFixed(4)}° N, {Math.abs(selectedAirport.elements[0]?.center.lng || 0).toFixed(4)}° W
-        </div>
+        {/* GPS Readout */}
+        {gpsPosition && (
+          <div className="absolute bottom-3 right-3">
+            <LocationReadout
+              lat={gpsPosition.lat}
+              lng={gpsPosition.lng}
+              accuracy={gpsPosition.accuracy}
+              heading={gpsPosition.heading}
+              speed={gpsPosition.speed}
+            />
+          </div>
+        )}
       </div>
 
       {/* Observation popup */}
