@@ -9,6 +9,7 @@ import AirportSelection from "@/pages/AirportSelection";
 import Dashboard from "@/pages/Dashboard";
 import MapView from "@/pages/MapView";
 import InspectionForm from "@/pages/InspectionForm";
+import OverpassImport from "@/pages/OverpassImport";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/map" element={<MapView />} />
             <Route path="/inspect" element={<InspectionForm />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/import" element={<OverpassImport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
