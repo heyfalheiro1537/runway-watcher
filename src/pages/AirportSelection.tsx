@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, ChevronRight } from 'lucide-react';
+import { Search, ChevronRight, Loader2, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/context/AppContext';
 import { StatusLed } from '@/components/StatusBadge';
 import { Airport } from '@/types';
+import { searchAirport, fetchAerowayElements } from '@/lib/overpass';
 
 export default function AirportSelection() {
   const { airports, selectedAirport, setSelectedAirport, addAirport } = useAppState();
   const navigate = useNavigate();
-  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Import state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [coordLat, setCoordLat] = useState('');
+  const [coordLng, setCoordLng] = useState('');
+  const [importMode, setImportMode] = useState<'search' | 'coords'>('search');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleSelectAirport = (airport: Airport) => {
     setSelectedAirport(airport);
@@ -21,36 +29,58 @@ export default function AirportSelection() {
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.geojson') || file.name.endsWith('.json'))) {
-      handleFileImport(file);
+  const handleImport = async () => {
+    setImporting(true);
+    setImportError(null);
+
+    try {
+      let lat: number, lng: number, name: string, code: string;
+
+      if (importMode === 'search') {
+        if (!searchQuery.trim()) throw new Error('Enter an airport name or ICAO/IATA code');
+        const result = await searchAirport(searchQuery.trim());
+        if (!result) throw new Error('Airport not found. Try a different name or use coordinates.');
+        lat = result.lat;
+        lng = result.lng;
+        // Extract a short name
+        name = result.displayName.split(',')[0];
+        code = searchQuery.trim().toUpperCase().slice(0, 4);
+      } else {
+        lat = parseFloat(coordLat);
+        lng = parseFloat(coordLng);
+        if (isNaN(lat) || isNaN(lng)) throw new Error('Enter valid latitude and longitude');
+        name = `Airport at ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+        code = 'CUST';
+      }
+
+      const airportId = `ovp-${Date.now()}`;
+      const elements = await fetchAerowayElements(lat, lng, airportId);
+
+      const runwayCount = elements.filter(e => e.type === 'runway').length;
+
+      const newAirport: Airport = {
+        id: airportId,
+        iataCode: code.slice(0, 4),
+        name,
+        city: importMode === 'search' ? searchQuery.trim() : `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        runways: runwayCount,
+        elevation: 0,
+        magneticVariation: '---',
+        elements,
+      };
+
+      addAirport(newAirport);
+      setSelectedAirport(newAirport);
+      setSearchQuery('');
+      setCoordLat('');
+      setCoordLng('');
+    } catch (err: any) {
+      setImportError(err.message || 'Import failed');
+    } finally {
+      setImporting(false);
     }
   };
 
-  const handleFileImport = (file: File) => {
-    // Mock import — create a fake airport
-    const newAirport: Airport = {
-      id: `imported-${Date.now()}`,
-      iataCode: 'IMP',
-      name: file.name.replace(/\.(geo)?json$/, ''),
-      city: 'Imported',
-      runways: 2,
-      elevation: 0,
-      magneticVariation: '---',
-      elements: [],
-    };
-    addAirport(newAirport);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileImport(file);
-  };
-
-  // Determine worst status for airport
   const getAirportWorstStatus = (airport: Airport) => {
     if (!airport.elements.length) return 'regular' as const;
     if (airport.elements.some(e => e.status === 'requires_intervention')) return 'requires_intervention' as const;
@@ -65,28 +95,91 @@ export default function AirportSelection() {
         <p className="text-sm text-muted-foreground mt-1">Select an airfield or import a new one</p>
       </header>
 
-      {/* Import dropzone */}
-      <div
-        onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleDrop}
-        className={`bezel p-6 mb-6 flex flex-col items-center justify-center gap-3 transition-colors cursor-pointer ${
-          isDragOver ? 'border-primary bg-primary/5' : ''
-        }`}
-        onClick={() => document.getElementById('file-input')?.click()}
-      >
-        <Upload size={24} className="text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-sm font-medium">Import Airport</p>
-          <p className="text-xs text-muted-foreground mt-1">.geojson or .json files</p>
+      {/* Import panel */}
+      <div className="bezel p-4 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin size={16} className="text-primary" />
+          <span className="text-sm font-medium">Import Airport</span>
         </div>
-        <input
-          id="file-input"
-          type="file"
-          accept=".geojson,.json"
-          className="hidden"
-          onChange={handleFileInput}
-        />
+
+        {/* Mode toggle */}
+        <div className="flex gap-1 mb-3">
+          <button
+            onClick={() => setImportMode('search')}
+            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              importMode === 'search'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Search by name
+          </button>
+          <button
+            onClick={() => setImportMode('coords')}
+            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              importMode === 'coords'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Coordinates
+          </button>
+        </div>
+
+        {importMode === 'search' ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleImport()}
+              placeholder="e.g. SFO, Heathrow, LFPG…"
+              className="flex-1 bg-muted border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <button
+              onClick={handleImport}
+              disabled={importing}
+              className="touch-target bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium flex items-center gap-1.5 active:translate-y-0.5 transition-transform disabled:opacity-50"
+            >
+              {importing ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              {importing ? 'Loading…' : 'Fetch'}
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={coordLat}
+              onChange={e => setCoordLat(e.target.value)}
+              placeholder="Latitude"
+              className="flex-1 bg-muted border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+            />
+            <input
+              type="text"
+              value={coordLng}
+              onChange={e => setCoordLng(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleImport()}
+              placeholder="Longitude"
+              className="flex-1 bg-muted border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+            />
+            <button
+              onClick={handleImport}
+              disabled={importing}
+              className="touch-target bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium flex items-center gap-1.5 active:translate-y-0.5 transition-transform disabled:opacity-50"
+            >
+              {importing ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              {importing ? 'Loading…' : 'Fetch'}
+            </button>
+          </div>
+        )}
+
+        {importError && (
+          <p className="text-xs text-destructive mt-2">{importError}</p>
+        )}
+
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Fetches real aeroway geometry from OpenStreetMap via Overpass API
+        </p>
       </div>
 
       {/* Airport grid */}
@@ -121,6 +214,11 @@ export default function AirportSelection() {
                     <span className="text-border">|</span>
                     <span>MAG VAR: {airport.magneticVariation}</span>
                   </div>
+                  {airport.elements.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      {airport.elements.length} elements mapped
+                    </p>
+                  )}
                 </button>
               </motion.div>
             );
