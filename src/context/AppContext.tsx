@@ -18,7 +18,7 @@ const AppContext = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole>('inspector');
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
-  const [airports, setAirports] = useState<Airport[]>(mockAirports);
+  const [airports, setAirports] = useState<Airport[]>([]);
   const [reports, setReports] = useState<InspectionReport[]>(mockReports);
 
   const addReport = useCallback((report: InspectionReport) => {
