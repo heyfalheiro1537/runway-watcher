@@ -35,6 +35,8 @@ export default function MapView() {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const pickDownPos = useRef<{ x: number; y: number } | null>(null);
   const [pickDraft, setPickDraft] = useState<{ svgPos: { x: number; y: number }; geo: GeoCoord } | null>(null);
+  const activePointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const lastPinchDist = useRef<number | null>(null);
 
   const airportReports = useMemo(() =>
     reports.filter(r => r.airportId === selectedAirport?.id),
@@ -56,41 +58,97 @@ export default function MapView() {
     return airportReports.filter(r => r.elementId === selectedElement.id);
   }, [airportReports, selectedElement]);
 
-  // Pan / pick-tap handlers
+  // Pan / pinch-zoom / pick-tap handlers
   const handlePointerDown = (e: React.PointerEvent) => {
-    setIsPanning(true);
-    setPanStart({ x: e.clientX, y: e.clientY });
-    pickDownPos.current = { x: e.clientX, y: e.clientY };
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.current.size === 1) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+      pickDownPos.current = { x: e.clientX, y: e.clientY };
+      lastPinchDist.current = null;
+    } else if (activePointers.current.size === 2) {
+      // Second finger down — switch to pinch mode
+      setIsPanning(false);
+      pickDownPos.current = null;
+      const pts = Array.from(activePointers.current.values());
+      const dx = pts[1].x - pts[0].x;
+      const dy = pts[1].y - pts[0].y;
+      lastPinchDist.current = Math.sqrt(dx * dx + dy * dy);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointers.current.size >= 2) {
+      const pts = Array.from(activePointers.current.values());
+      const dx = pts[1].x - pts[0].x;
+      const dy = pts[1].y - pts[0].y;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      if (lastPinchDist.current !== null && newDist > 0 && svgRef.current) {
+        const scale = lastPinchDist.current / newDist;
+        lastPinchDist.current = newDist;
+        const cx = (pts[0].x + pts[1].x) / 2;
+        const cy = (pts[0].y + pts[1].y) / 2;
+        const svgEl = svgRef.current;
+        const pt = svgEl.createSVGPoint();
+        pt.x = cx; pt.y = cy;
+        const svgP = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+        const px = svgP.x; const py = svgP.y;
+        setViewBox(prev => ({
+          x: px - (px - prev.x) * scale,
+          y: py - (py - prev.y) * scale,
+          w: prev.w * scale,
+          h: prev.h * scale,
+        }));
+      }
+      return;
+    }
+
     if (!isPanning) return;
-    const dx = (e.clientX - panStart.x) * (viewBox.w / 800);
-    const dy = (e.clientY - panStart.y) * (viewBox.h / 500);
-    setViewBox(prev => ({ ...prev, x: prev.x - dx, y: prev.y - dy }));
+    const rawDx = e.clientX - panStart.x;
+    const rawDy = e.clientY - panStart.y;
+    setViewBox(prev => ({ ...prev, x: prev.x - rawDx * (prev.w / 800), y: prev.y - rawDy * (prev.h / 500) }));
     setPanStart({ x: e.clientX, y: e.clientY });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    setIsPanning(false);
-    if (pickMode && pickDownPos.current && svgRef.current) {
-      const ddx = e.clientX - pickDownPos.current.x;
-      const ddy = e.clientY - pickDownPos.current.y;
-      const dist = Math.sqrt(ddx * ddx + ddy * ddy);
-      if (dist <= 8) {
-        const svgEl = svgRef.current;
-        const pt = svgEl.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgP = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
-        const geo = svgToGeo(svgP.x, svgP.y, svgTransform);
-        setPickDraft({ svgPos: { x: svgP.x, y: svgP.y }, geo });
+    activePointers.current.delete(e.pointerId);
+
+    if (activePointers.current.size === 0) {
+      setIsPanning(false);
+      lastPinchDist.current = null;
+      if (pickMode && pickDownPos.current && svgRef.current) {
+        const ddx = e.clientX - pickDownPos.current.x;
+        const ddy = e.clientY - pickDownPos.current.y;
+        if (Math.sqrt(ddx * ddx + ddy * ddy) <= 8) {
+          const svgEl = svgRef.current;
+          const pt = svgEl.createSVGPoint();
+          pt.x = e.clientX; pt.y = e.clientY;
+          const svgP = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+          const geo = svgToGeo(svgP.x, svgP.y, svgTransform);
+          setPickDraft({ svgPos: { x: svgP.x, y: svgP.y }, geo });
+        }
       }
+      pickDownPos.current = null;
+    } else if (activePointers.current.size === 1) {
+      // Pinch ended, one finger still down — resume pan from that finger
+      lastPinchDist.current = null;
+      pickDownPos.current = null;
+      const remaining = Array.from(activePointers.current.values())[0];
+      setIsPanning(true);
+      setPanStart(remaining);
     }
-    pickDownPos.current = null;
   };
 
-  const handlePointerLeave = () => setIsPanning(false);
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    activePointers.current.delete(e.pointerId);
+    if (activePointers.current.size === 0) {
+      setIsPanning(false);
+      lastPinchDist.current = null;
+      pickDownPos.current = null;
+    }
+  };
 
   const handleWheel = (e: React.WheelEvent) => {
     const scale = e.deltaY > 0 ? 1.1 : 0.9;
