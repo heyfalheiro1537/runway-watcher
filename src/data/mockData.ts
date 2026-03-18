@@ -1,4 +1,4 @@
-import { Airport, AirportElement, InspectionReport, type InspectionStatus } from '@/types';
+import { Airport, AirportElement, InspectionReport, type InspectionStatus, type ElementType } from '@/types';
 
 export const mockAirports: Airport[] = [
   {
@@ -283,6 +283,20 @@ export function getStatusColor(status: InspectionStatus): string {
     case 'regular': return 'hsl(142, 70%, 45%)';
     case 'requires_attention': return 'hsl(38, 92%, 50%)';
     case 'requires_intervention': return 'hsl(0, 84%, 60%)';
+  }
+}
+
+export function getTypeColor(type: ElementType): string {
+  switch (type) {
+    case 'runway':           return 'hsl(215, 20%, 55%)';
+    case 'taxiway':          return 'hsl(47, 90%, 55%)';
+    case 'apron':            return 'hsl(210, 60%, 50%)';
+    case 'shoulder':         return 'hsl(30, 50%, 45%)';
+    case 'safety_strip':     return 'hsl(142, 55%, 40%)';
+    case 'terminal':         return 'hsl(40, 30%, 50%)';
+    case 'hangar':           return 'hsl(200, 15%, 45%)';
+    case 'holding_position': return 'hsl(15, 90%, 55%)';
+    default:                 return 'hsl(260, 20%, 50%)';
   }
 }
 

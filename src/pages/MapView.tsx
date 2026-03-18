@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle, Locate } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { X, Plus, AlertOctagon, AlertTriangle, Info, CheckCircle, Locate, MapPin } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge, StatusLed } from '@/components/StatusBadge';
-import { AirportElement, Observation, InspectionReport } from '@/types';
-import { getStatusColor, mockReports } from '@/data/mockData';
+import { AirportElement, Observation, InspectionReport, GeoCoord } from '@/types';
+import { getStatusColor, getTypeColor, mockReports } from '@/data/mockData';
+import { buildTransform, geoToSvg, svgToGeo } from '@/lib/geoProjection';
 import { format, parseISO } from 'date-fns';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
@@ -20,8 +21,11 @@ const severityIcons = {
 };
 
 export default function MapView() {
-  const { selectedAirport, reports, role } = useAppState();
+  const { selectedAirport, reports, role, setPendingPickCoord } = useAppState();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const pickMode = searchParams.get('pickLocation') === 'true';
+  const returnElement = searchParams.get('element');
   const { position: gpsPosition } = useGeolocation();
   const [selectedElement, setSelectedElement] = useState<AirportElement | null>(null);
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
@@ -29,6 +33,8 @@ export default function MapView() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const pickDownPos = useRef<{ x: number; y: number } | null>(null);
+  const [pickDraft, setPickDraft] = useState<{ svgPos: { x: number; y: number }; geo: GeoCoord } | null>(null);
 
   const airportReports = useMemo(() =>
     reports.filter(r => r.airportId === selectedAirport?.id),
@@ -50,10 +56,11 @@ export default function MapView() {
     return airportReports.filter(r => r.elementId === selectedElement.id);
   }, [airportReports, selectedElement]);
 
-  // Pan handlers
+  // Pan / pick-tap handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsPanning(true);
     setPanStart({ x: e.clientX, y: e.clientY });
+    pickDownPos.current = { x: e.clientX, y: e.clientY };
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -64,7 +71,26 @@ export default function MapView() {
     setPanStart({ x: e.clientX, y: e.clientY });
   };
 
-  const handlePointerUp = () => setIsPanning(false);
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsPanning(false);
+    if (pickMode && pickDownPos.current && svgRef.current) {
+      const ddx = e.clientX - pickDownPos.current.x;
+      const ddy = e.clientY - pickDownPos.current.y;
+      const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+      if (dist <= 8) {
+        const svgEl = svgRef.current;
+        const pt = svgEl.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+        const geo = svgToGeo(svgP.x, svgP.y, svgTransform);
+        setPickDraft({ svgPos: { x: svgP.x, y: svgP.y }, geo });
+      }
+    }
+    pickDownPos.current = null;
+  };
+
+  const handlePointerLeave = () => setIsPanning(false);
 
   const handleWheel = (e: React.WheelEvent) => {
     const scale = e.deltaY > 0 ? 1.1 : 0.9;
@@ -75,15 +101,14 @@ export default function MapView() {
     setViewBox({ x: viewBox.x + dx, y: viewBox.y + dy, w: newW, h: newH });
   };
 
-  // Map observation coords to SVG space (simplified)
+  const svgTransform = useMemo(
+    () => buildTransform(selectedAirport?.elements || []),
+    [selectedAirport]
+  );
+
   const obsToSvg = (obs: typeof allObservations[0]) => {
-    const el = selectedAirport?.elements.find(e => e.id === obs.elementId);
-    if (!el) return null;
-    // Spread observations around element center with slight offset based on id hash
-    const hash = obs.id.charCodeAt(obs.id.length - 1);
-    const cx = parseFloat(el.pathData.match(/M\s*(\d+)/)?.[1] || '400') + (hash % 50);
-    const cy = parseFloat(el.pathData.match(/M\s*\d+\s+(\d+)/)?.[1] || '250') + ((hash * 7) % 30);
-    return { x: cx, y: cy };
+    if (!selectedAirport || selectedAirport.elements.length === 0) return null;
+    return geoToSvg(obs.geoCoord, svgTransform);
   };
 
   if (!selectedAirport) {
@@ -97,9 +122,49 @@ export default function MapView() {
     );
   }
 
+  const confirmPick = () => {
+    if (!pickDraft) return;
+    setPendingPickCoord(pickDraft.geo);
+    const params = new URLSearchParams();
+    if (returnElement) params.set('element', returnElement);
+    navigate(`/inspect?${params.toString()}`);
+  };
+
+  const cancelPick = () => {
+    const params = new URLSearchParams();
+    if (returnElement) params.set('element', returnElement);
+    navigate(`/inspect?${params.toString()}`);
+  };
+
   return (
     <div className="fixed inset-0 pb-16 flex flex-col bg-surface-sunken">
-      {/* Header */}
+      {/* Pick-mode banner */}
+      {pickMode ? (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-amber-950/80 backdrop-blur-sm z-10">
+          <div className="flex items-center gap-2">
+            <MapPin size={16} className="text-amber-400" />
+            <span className="text-sm font-medium text-amber-200">
+              {pickDraft ? 'Pin placed — confirm or tap again' : 'Tap the map to mark observation location'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={cancelPick}
+              className="px-3 py-1.5 text-xs rounded border border-amber-700/50 text-amber-300 hover:bg-amber-900/40 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmPick}
+              disabled={!pickDraft}
+              className="px-3 py-1.5 text-xs rounded bg-amber-500 text-amber-950 font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:translate-y-0.5 transition-transform"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      ) : (
+      /* Normal header */
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm z-10">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-bold">{selectedAirport.iataCode}</span>
@@ -114,17 +179,18 @@ export default function MapView() {
           </button>
         )}
       </div>
+      )}
 
       {/* SVG Map */}
       <div className="flex-1 relative overflow-hidden">
         <svg
           ref={svgRef}
           viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
-          className="w-full h-full cursor-grab active:cursor-grabbing"
+          className={`w-full h-full ${pickMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
           onWheel={handleWheel}
           style={{ touchAction: 'none' }}
         >
@@ -136,49 +202,61 @@ export default function MapView() {
           </defs>
           <rect x="-200" y="-200" width="1200" height="900" fill="url(#grid)" />
 
-          {/* Airport elements */}
-          {selectedAirport.elements.map(element => (
-            <motion.path
-              key={element.id}
-              d={element.pathData}
-              fill={getStatusColor(element.status)}
-              fillOpacity={selectedElement?.id === element.id ? 0.4 : 0.15}
-              stroke={getStatusColor(element.status)}
-              strokeWidth={selectedElement?.id === element.id ? 2.5 : 1.5}
-              className="cursor-pointer"
-              whileTap={{ fillOpacity: 0.4 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedElement(element);
-                setSelectedObservation(null);
-              }}
-            />
-          ))}
+          {/* Airport elements — background first, runways on top */}
+          {[...selectedAirport.elements].sort((a, b) => {
+            const order = (t: string) => {
+              switch (t) {
+                case 'other':            return 0;
+                case 'terminal':
+                case 'hangar':           return 1;
+                case 'safety_strip':
+                case 'shoulder':         return 2;
+                case 'apron':            return 3;
+                case 'holding_position': return 4;
+                case 'taxiway':          return 5;
+                case 'runway':           return 6;
+                default:                 return 0;
+              }
+            };
+            return order(a.type) - order(b.type);
+          }).map(element => {
+            const isSelected = selectedElement?.id === element.id;
+            const typeColor = getTypeColor(element.type);
+            // Open paths (no Z) are centerlines — render as thick strokes with no fill
+            const isOpenPath = !element.pathData.trimEnd().endsWith('Z');
+            const centerlineStroke =
+              element.type === 'runway' ? 10 :
+              element.type === 'taxiway' ? 2.5 : 3;
+            const polyStroke =
+              element.type === 'runway' ? 2.5 :
+              element.type === 'taxiway' ? 0.8 : 0.8;
+            const baseStroke = isOpenPath ? centerlineStroke : polyStroke;
 
-          {/* Element labels */}
-          {selectedAirport.elements.map(element => {
-            const match = element.pathData.match(/M\s*(\d+)\s+(\d+)/);
-            if (!match) return null;
-            const pathParts = element.pathData.match(/\d+/g)?.map(Number) || [];
-            const xs = pathParts.filter((_, i) => i % 2 === 0);
-            const ys = pathParts.filter((_, i) => i % 2 === 1);
-            const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
-            const cy = ys.reduce((a, b) => a + b, 0) / ys.length;
             return (
-              <text
-                key={`label-${element.id}`}
-                x={cx}
-                y={cy}
-                textAnchor="middle"
-                dominantBaseline="central"
-                className="pointer-events-none select-none"
-                fill="hsl(210, 40%, 90%)"
-                fontSize="9"
-                fontFamily="'Geist Mono', monospace"
-                fontWeight="600"
-              >
-                {element.label}
-              </text>
+              <motion.path
+                key={element.id}
+                d={element.pathData}
+                fill={isOpenPath ? 'none' : (isSelected ? 'hsl(217,91%,60%)' : typeColor)}
+                fillOpacity={isOpenPath ? 0 : (isSelected ? 0.35 : (element.type === 'runway' || element.type === 'taxiway' ? 0.22 : 0.12))}
+                stroke={isSelected ? 'hsl(217,91%,60%)' : typeColor}
+                strokeWidth={isSelected ? baseStroke * 1.4 : baseStroke}
+                strokeOpacity={isSelected ? 1 : 0.85}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="cursor-pointer"
+                animate={{
+                  stroke: isSelected ? 'hsl(217,91%,60%)' : typeColor,
+                  strokeWidth: isSelected ? baseStroke * 1.4 : baseStroke,
+                }}
+                transition={{ duration: 0.15 }}
+                whileTap={{ strokeOpacity: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (pickMode) return;
+                  setSelectedElement(element);
+                  setSelectedObservation(null);
+                }}
+              />
             );
           })}
 
@@ -214,6 +292,7 @@ export default function MapView() {
                 className="cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (pickMode) return;
                   setSelectedObservation(obs);
                 }}
               >
@@ -222,15 +301,51 @@ export default function MapView() {
               </g>
             );
           })}
+
+          {/* Pick-mode draft pin */}
+          {pickMode && pickDraft && (() => {
+            const s = viewBox.w / 800;
+            const r = 11 * s;     // head radius
+            const neck = 4 * s;   // narrow point below head
+            const stem = 15 * s;  // stem height from tip to neck
+            // Teardrop path: tip at (0,0), body above
+            const d = [
+              `M 0 0`,
+              `C ${-neck} ${-(stem * 0.4)} ${-r} ${-(stem + r * 0.5)} ${-r} ${-(stem + r)}`,
+              `A ${r} ${r} 0 1 1 ${r} ${-(stem + r)}`,
+              `C ${r} ${-(stem + r * 0.5)} ${neck} ${-(stem * 0.4)} 0 0`,
+              'Z',
+            ].join(' ');
+            return (
+              <g transform={`translate(${pickDraft.svgPos.x}, ${pickDraft.svgPos.y})`}>
+                {/* Shadow */}
+                <ellipse cx={0} cy={1.5 * s} rx={5 * s} ry={2 * s} fill="hsl(0,0%,0%)" fillOpacity={0.25} />
+                {/* Pin body */}
+                <path d={d} fill="hsl(38,96%,54%)" />
+                {/* Inner circle */}
+                <circle cx={0} cy={-(stem + r)} r={r * 0.42} fill="hsl(222,47%,10%)" />
+              </g>
+            );
+          })()}
         </svg>
 
         {/* Minimap */}
         <div className="absolute bottom-3 left-3 w-28 h-20 bezel overflow-hidden opacity-80">
           <svg viewBox="0 0 800 500" className="w-full h-full">
             <rect width="800" height="500" fill="hsl(222,47%,4%)" />
-            {selectedAirport.elements.map(el => (
-              <path key={el.id} d={el.pathData} fill={getStatusColor(el.status)} fillOpacity={0.3} stroke={getStatusColor(el.status)} strokeWidth="1" />
-            ))}
+            {selectedAirport.elements.map(el => {
+              const open = !el.pathData.trimEnd().endsWith('Z');
+              return (
+                <path
+                  key={el.id}
+                  d={el.pathData}
+                  fill={open ? 'none' : getTypeColor(el.type)}
+                  fillOpacity={0.3}
+                  stroke={getTypeColor(el.type)}
+                  strokeWidth={open ? (el.type === 'runway' ? 6 : el.type === 'taxiway' ? 1.5 : 2) : 1}
+                />
+              );
+            })}
             <rect
               x={viewBox.x}
               y={viewBox.y}
@@ -334,7 +449,7 @@ export default function MapView() {
 
               {role === 'inspector' && (
                 <button
-                  onClick={() => navigate(`/inspect?element=${selectedElement.id}`)}
+                  onClick={() => navigate(`/inspect?element=${selectedElement.id}&type=${selectedElement.type}&identifier=${encodeURIComponent(selectedElement.identifier)}`)}
                   className="w-full bg-primary text-primary-foreground rounded p-3 text-sm font-medium mb-4 flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
                 >
                   <Plus size={14} /> Start Inspection

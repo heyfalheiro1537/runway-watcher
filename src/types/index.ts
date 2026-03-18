@@ -1,6 +1,15 @@
 export type UserRole = 'inspector' | 'supervisor';
 
-export type ElementType = 'runway' | 'taxiway' | 'apron' | 'safety_strip' | 'shoulder' | 'other';
+export type ElementType =
+  | 'runway'
+  | 'taxiway'
+  | 'apron'
+  | 'safety_strip'
+  | 'shoulder'
+  | 'terminal'
+  | 'hangar'
+  | 'holding_position'
+  | 'other';
 
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
 

@@ -21,10 +21,28 @@ interface OverpassElement {
 }
 
 function mapAerowayToType(aeroway: string): ElementType {
-  if (aeroway === 'runway') return 'runway';
-  if (aeroway === 'taxiway') return 'taxiway';
-  if (aeroway === 'apron') return 'apron';
-  return 'other';
+  switch (aeroway) {
+    case 'runway':
+    case 'stopway':
+      return 'runway';
+    case 'taxiway':
+    case 'taxilane':
+      return 'taxiway';
+    case 'apron':
+    case 'parking_position':
+    case 'gate':
+      return 'apron';
+    case 'helipad':
+      return 'apron';
+    case 'terminal':
+      return 'terminal';
+    case 'hangar':
+      return 'hangar';
+    case 'holding_position':
+      return 'holding_position';
+    default:
+      return 'other';
+  }
 }
 
 function slugify(type: string, ref: string): string {
@@ -50,6 +68,17 @@ function centroid(coords: OverpassGeometry[]): { lat: number; lng: number } {
   return { lat: sum.lat / coords.length, lng: sum.lng / coords.length };
 }
 
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLon = (b.lon - a.lon) * Math.PI / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
 function projectToSvg(
   coords: OverpassGeometry[],
   bbox: { minLat: number; maxLat: number; minLng: number; maxLng: number },
@@ -69,7 +98,14 @@ function projectToSvg(
     return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
   });
 
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+  // Only close the path if the original geometry forms a closed ring
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  const isClosed = coords.length >= 3 &&
+    Math.abs(first.lat - last.lat) < 1e-6 &&
+    Math.abs(first.lon - last.lon) < 1e-6;
+
+  return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + (isClosed ? ' Z' : '');
 }
 
 /** Search for an airport by name/code using Nominatim and return coordinates */
@@ -93,7 +129,8 @@ export async function fetchAerowayElements(
   lat: number,
   lng: number,
   airportId: string,
-  radius = 8000
+  radius = 5000,
+  filterRadiusKm = 3
 ): Promise<AirportElement[]> {
   const query = `[out:json];
 (
@@ -111,9 +148,28 @@ out geom;`;
   const data = await res.json();
 
   const raw: OverpassElement[] = data.elements || [];
-  const allCoords = raw.flatMap(getGeometryCoords);
-  if (allCoords.length === 0) throw new Error('No geometry data found at this location');
+  if (raw.length === 0) throw new Error('No geometry data found at this location');
 
+  // Parse elements and compute centroids
+  const center = { lat, lon: lng };
+  const parsed = raw
+    .filter(el => el.tags?.aeroway)
+    .map(el => {
+      const coords = getGeometryCoords(el);
+      const c = centroid(coords);
+      return { el, coords, centroidGeo: { lat: c.lat, lon: c.lng } };
+    })
+    .filter(({ coords }) => coords.length > 0);
+
+  // Drop elements whose centroid is too far from the search center
+  const nearby = parsed.filter(({ centroidGeo }) =>
+    haversineKm(center, centroidGeo) <= filterRadiusKm
+  );
+
+  if (nearby.length === 0) throw new Error('No geometry data found at this location');
+
+  // Build bbox from kept elements only
+  const allCoords = nearby.flatMap(({ coords }) => coords);
   const bbox = {
     minLat: Math.min(...allCoords.map(c => c.lat)),
     maxLat: Math.max(...allCoords.map(c => c.lat)),
@@ -122,9 +178,8 @@ out geom;`;
   };
 
   const seen = new Set<string>();
-  return raw
-    .filter(el => el.tags?.aeroway)
-    .map(el => {
+  return nearby
+    .map(({ el, coords, centroidGeo }) => {
       const aeroway = el.tags!.aeroway;
       const type = mapAerowayToType(aeroway);
       const ref = el.tags?.ref || el.tags?.name || `${aeroway}-${el.id}`;
@@ -132,7 +187,6 @@ out geom;`;
       if (seen.has(id)) id = `${id}-${el.id}`;
       seen.add(id);
 
-      const coords = getGeometryCoords(el);
       const identifier = type === 'runway' ? `RWY ${ref}` : ref;
 
       return {
@@ -142,7 +196,7 @@ out geom;`;
         identifier,
         label: ref,
         status: 'regular' as const,
-        center: centroid(coords),
+        center: { lat: centroidGeo.lat, lng: centroidGeo.lon },
         pathData: projectToSvg(coords, bbox),
       };
     })
