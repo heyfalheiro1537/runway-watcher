@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Airport, InspectionReport, UserRole } from '@/types';
-import { mockAirports, mockReports } from '@/data/mockData';
+import { mockReports } from '@/data/mockData';
 
 interface AppState {
   role: UserRole;
