@@ -8,6 +8,13 @@ const severityStyles: Record<SeverityLevel, string> = {
   critical: 'bg-severity-critical/15 text-severity-critical border-severity-critical/30',
 };
 
+const severityLabels: Record<SeverityLevel, string> = {
+  low: 'BAIXA',
+  medium: 'MÉDIA',
+  high: 'ALTA',
+  critical: 'CRÍTICA',
+};
+
 const statusStyles: Record<InspectionStatus, string> = {
   regular: 'bg-status-regular/15 text-status-regular border-status-regular/30',
   requires_attention: 'bg-status-attention/15 text-status-attention border-status-attention/30',
@@ -15,9 +22,9 @@ const statusStyles: Record<InspectionStatus, string> = {
 };
 
 const statusLabels: Record<InspectionStatus, string> = {
-  regular: 'REGULAR',
-  requires_attention: 'ATTENTION',
-  requires_intervention: 'INTERVENTION',
+  regular: 'NORMAL',
+  requires_attention: 'ATENÇÃO',
+  requires_intervention: 'INTERVENÇÃO',
 };
 
 export function SeverityBadge({ severity, className }: { severity: SeverityLevel; className?: string }) {
@@ -27,7 +34,7 @@ export function SeverityBadge({ severity, className }: { severity: SeverityLevel
       severityStyles[severity],
       className
     )}>
-      {severity}
+      {severityLabels[severity]}
     </span>
   );
 }

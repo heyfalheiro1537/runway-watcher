@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, BookOpen, Filter } from 'lucide-react';
+import { Search, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { regulations, regulationCategories, type Regulation } from '@/data/regulations';
 import { ElementType } from '@/types';
@@ -12,6 +12,16 @@ const sourceColors: Record<string, string> = {
   ICAO: 'bg-primary/20 text-primary',
   FAA: 'bg-status-attention/20 text-status-attention',
   EASA: 'bg-status-regular/20 text-status-regular',
+  ANAC: 'bg-severity-medium/20 text-severity-medium',
+};
+
+const categoryLabels: Record<string, string> = {
+  surface: 'Superfície',
+  marking: 'Sinalização',
+  lighting: 'Iluminação',
+  safety: 'Segurança',
+  fod: 'FOD',
+  drainage: 'Drenagem',
 };
 
 export default function RegulationsPanel({ elementType }: RegulationsPanelProps) {
@@ -38,22 +48,22 @@ export default function RegulationsPanel({ elementType }: RegulationsPanelProps)
       <div className="flex items-center gap-2">
         <BookOpen size={14} className="text-primary" />
         <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Regulations
+          Regulamentações
         </h3>
       </div>
 
-      {/* Search */}
+      {/* Busca */}
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search regulations..."
+          placeholder="Buscar regulamentações..."
           className="w-full bg-muted border-none rounded pl-9 pr-3 py-2 text-xs outline-none placeholder:text-muted-foreground"
         />
       </div>
 
-      {/* Category filters */}
+      {/* Filtros por categoria */}
       <div className="flex gap-1.5 flex-wrap">
         <button
           onClick={() => setCategoryFilter(null)}
@@ -61,7 +71,7 @@ export default function RegulationsPanel({ elementType }: RegulationsPanelProps)
             !categoryFilter ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}
         >
-          All
+          Todos
         </button>
         {regulationCategories.map(cat => (
           <button
@@ -71,15 +81,15 @@ export default function RegulationsPanel({ elementType }: RegulationsPanelProps)
               categoryFilter === cat.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}
           >
-            {cat.label}
+            {categoryLabels[cat.value] || cat.label}
           </button>
         ))}
       </div>
 
-      {/* Results */}
+      {/* Resultados */}
       <div className="space-y-1.5 max-h-64 overflow-y-auto">
         {filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">No matching regulations</p>
+          <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma regulamentação encontrada</p>
         ) : (
           filtered.map(reg => (
             <motion.div
@@ -91,7 +101,7 @@ export default function RegulationsPanel({ elementType }: RegulationsPanelProps)
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${sourceColors[reg.source]}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${sourceColors[reg.source] || 'bg-muted text-muted-foreground'}`}>
                       {reg.source}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground">{reg.code}</span>

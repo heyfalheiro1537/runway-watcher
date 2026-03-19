@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, AlertTriangle, Bell, FileText, Activity, Filter } from 'lucide-react';
+import { Radio, AlertTriangle, Bell, FileText, Activity } from 'lucide-react';
 import { mockFeedItems, type FeedItem, type FeedItemType } from '@/data/newsFeed';
 import { format, parseISO } from 'date-fns';
 
@@ -10,10 +10,10 @@ interface NewsFeedProps {
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Radio; color: string; label: string }> = {
-  safety_bulletin: { icon: FileText, color: 'text-severity-medium', label: 'Bulletin' },
+  safety_bulletin: { icon: FileText, color: 'text-severity-medium', label: 'Boletim' },
   notam: { icon: Bell, color: 'text-primary', label: 'NOTAM' },
-  activity: { icon: Activity, color: 'text-status-regular', label: 'Activity' },
-  alert: { icon: AlertTriangle, color: 'text-severity-critical', label: 'Alert' },
+  activity: { icon: Activity, color: 'text-status-regular', label: 'Atividade' },
+  alert: { icon: AlertTriangle, color: 'text-severity-critical', label: 'Alerta' },
 };
 
 const severityBg: Record<string, string> = {
@@ -41,11 +41,11 @@ export default function NewsFeed({ airportId, compact = false }: NewsFeedProps) 
       <div className="flex items-center gap-2">
         <Radio size={14} className="text-primary" />
         <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Feed
+          Relatório de Operações
         </h3>
       </div>
 
-      {/* Filter chips */}
+      {/* Filtros */}
       {!compact && (
         <div className="flex gap-1.5 flex-wrap">
           {(['all', 'alert', 'notam', 'safety_bulletin', 'activity'] as const).map(type => (
@@ -56,13 +56,13 @@ export default function NewsFeed({ airportId, compact = false }: NewsFeedProps) 
                 filter === type ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               }`}
             >
-              {type === 'all' ? 'All' : type === 'safety_bulletin' ? 'Bulletins' : type.charAt(0).toUpperCase() + type.slice(1)}
+              {type === 'all' ? 'Todos' : type === 'safety_bulletin' ? 'Boletins' : type === 'alert' ? 'Alertas' : type === 'notam' ? 'NOTAMs' : 'Atividades'}
             </button>
           ))}
         </div>
       )}
 
-      {/* Items */}
+      {/* Itens */}
       <div className="space-y-1.5">
         {items.map((item, i) => {
           const config = typeConfig[item.type];

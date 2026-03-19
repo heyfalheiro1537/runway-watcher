@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/', icon: Plane, label: 'Hangar' },
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/map', icon: Map, label: 'Map' },
-  { path: '/reports', icon: ClipboardList, label: 'Reports' },
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
+  { path: '/map', icon: Map, label: 'Mapa' },
+  { path: '/reports', icon: ClipboardList, label: 'Relatórios' },
 ];
 
 export default function BottomNav() {
@@ -44,7 +44,7 @@ export default function BottomNav() {
           )}>
             {role === 'inspector' ? 'I' : 'S'}
           </div>
-          <span className="font-medium capitalize">{role}</span>
+          <span className="font-medium capitalize">{role === 'inspector' ? 'Inspetor' : 'Supervisor'}</span>
         </button>
       </div>
     </nav>
