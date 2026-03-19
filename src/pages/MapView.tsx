@@ -13,7 +13,7 @@ import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
 import RegulationsPanel from '@/components/RegulationsPanel';
 import NewsFeed from '@/components/NewsFeed';
 import RunwayDetailModal from '@/components/RunwayDetailModal';
-import OperationsFeed from '@/components/OperationsFeed';
+
 
 const severityIcons = {
   low: CheckCircle,
@@ -451,10 +451,6 @@ export default function MapView() {
         )}
       </div>
 
-      {/* Operations feed drawer */}
-      {!pickMode && !selectedElement && !selectedObservation && (
-        <OperationsFeed airportId={selectedAirport.id} />
-      )}
 
       {/* Observation popup */}
       <AnimatePresence>

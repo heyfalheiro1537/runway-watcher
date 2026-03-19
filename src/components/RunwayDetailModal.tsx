@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info } from 'lucide-react';
+import { X, Info, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AirportElement } from '@/types';
 
 interface RunwayDetailModalProps {
@@ -51,6 +52,7 @@ const zones: Record<ZoneId, ZoneInfo> = {
 };
 
 export default function RunwayDetailModal({ element, open, onClose }: RunwayDetailModalProps) {
+  const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<ZoneId | null>(null);
   const [hoveredZone, setHoveredZone] = useState<ZoneId | null>(null);
 
@@ -307,6 +309,17 @@ export default function RunwayDetailModal({ element, open, onClose }: RunwayDeta
                   </button>
                 ))}
               </div>
+
+              {/* Inspection button */}
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate(`/inspect?element=${element.id}&type=${element.type}&identifier=${encodeURIComponent(element.identifier)}`);
+                }}
+                className="w-full bg-primary text-primary-foreground rounded p-3 text-sm font-medium mb-4 flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
+              >
+                <Plus size={14} /> Iniciar Inspeção
+              </button>
 
               {/* Footer definition */}
               <div className="bg-muted/50 rounded p-3 border border-border">
