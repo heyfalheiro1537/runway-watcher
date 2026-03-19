@@ -7,6 +7,8 @@ import { format, parseISO } from 'date-fns';
 interface NewsFeedProps {
   airportId?: string;
   compact?: boolean;
+  /** Evita título duplicado quando embutido em OperationsFeed */
+  hideTitle?: boolean;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Radio; color: string; label: string }> = {
@@ -22,7 +24,7 @@ const severityBg: Record<string, string> = {
   critical: 'border-l-status-intervention',
 };
 
-export default function NewsFeed({ airportId, compact = false }: NewsFeedProps) {
+export default function NewsFeed({ airportId, compact = false, hideTitle = false }: NewsFeedProps) {
   const [filter, setFilter] = useState<FeedItemType | 'all'>('all');
 
   const items = useMemo(() => {
@@ -38,12 +40,14 @@ export default function NewsFeed({ airportId, compact = false }: NewsFeedProps) 
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Radio size={14} className="text-primary" />
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Relatório de Operações
-        </h3>
-      </div>
+      {!hideTitle && (
+        <div className="flex items-center gap-2">
+          <Radio size={14} className="text-primary" />
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Relatório de Operações
+          </h3>
+        </div>
+      )}
 
       {/* Filtros */}
       {!compact && (
@@ -64,6 +68,11 @@ export default function NewsFeed({ airportId, compact = false }: NewsFeedProps) 
 
       {/* Itens */}
       <div className="space-y-1.5">
+        {items.length === 0 && (
+          <p className="text-[11px] text-muted-foreground text-center py-6 px-2">
+            Nenhum evento para este aeroporto com os filtros atuais. Boletins gerais (sem aeroporto) aparecem em todos os painéis.
+          </p>
+        )}
         {items.map((item, i) => {
           const config = typeConfig[item.type];
           const Icon = config.icon;

@@ -11,7 +11,7 @@ export default function OperationsFeed({ airportId }: OperationsFeedProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="border-t border-border bg-card/95 backdrop-blur-sm">
+    <div className="rounded-lg border border-border bg-card/95 backdrop-blur-sm overflow-hidden">
       {/* Header - always visible */}
       <button
         onClick={() => setCollapsed(!collapsed)}
@@ -24,7 +24,7 @@ export default function OperationsFeed({ airportId }: OperationsFeedProps) {
           </span>
           <span className="w-2 h-2 rounded-full bg-status-regular animate-pulse-glow" />
         </div>
-        {collapsed ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+        {collapsed ? <ChevronDown size={14} className="text-muted-foreground" /> : <ChevronUp size={14} className="text-muted-foreground" />}
       </button>
 
       {/* Content */}
@@ -38,7 +38,7 @@ export default function OperationsFeed({ airportId }: OperationsFeedProps) {
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 max-h-72 overflow-y-auto">
-              <NewsFeed airportId={airportId} />
+              <NewsFeed airportId={airportId} hideTitle />
             </div>
           </motion.div>
         )}

@@ -198,11 +198,6 @@ export default function MapView() {
   const handleElementClick = (element: AirportElement, e: React.MouseEvent) => {
     e.stopPropagation();
     if (pickMode) return;
-    
-    if (element.type === 'runway') {
-      setRunwayModalElement(element);
-    }
-    
     setSelectedElement(element);
     setSelectedObservation(null);
   };

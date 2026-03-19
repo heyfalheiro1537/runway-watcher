@@ -51,6 +51,8 @@ export interface Observation {
   createdAt: string;
 }
 
+export type RunwayZoneId = 'runway' | 'swy' | 'resa' | 'cwy' | 'strip' | 'protected';
+
 export interface InspectionReport {
   id: string;
   airportId: string;
@@ -59,6 +61,8 @@ export interface InspectionReport {
   elementType: ElementType;
   elementId: string;
   elementIdentifier: string;
+  /** Zone within the área protegida that the report targets (runway elements only) */
+  runwayZone?: RunwayZoneId;
   observations: Observation[];
   status: InspectionStatus;
   createdAt: string;

@@ -4,7 +4,16 @@ import { Download, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge } from '@/components/StatusBadge';
-import { ElementType, SeverityLevel, InspectionStatus } from '@/types';
+import { ElementType, SeverityLevel, InspectionStatus, RunwayZoneId } from '@/types';
+
+const runwayZoneLabels: Record<RunwayZoneId, string> = {
+  runway: 'Pista de Pouso e Decolagem',
+  swy: 'Stopway (SWY)',
+  resa: 'RESA',
+  cwy: 'Clearway (CWY)',
+  strip: 'Faixa de Pista',
+  protected: 'Área Protegida',
+};
 import { format, parseISO, isWithinInterval } from 'date-fns';
 import jsPDF from 'jspdf';
 
@@ -54,6 +63,10 @@ export default function Reports() {
       doc.text(`${report.elementIdentifier} - ${report.status.replace(/_/g, ' ').toUpperCase()}`, 14, y);
       y += 6;
       doc.setFontSize(9);
+      if (report.runwayZone) {
+        doc.text(`Zona: ${runwayZoneLabels[report.runwayZone]}`, 14, y);
+        y += 5;
+      }
       doc.text(`Inspetor: ${report.inspectorName} | Data: ${format(parseISO(report.createdAt), 'dd MMM yyyy HH:mm')}`, 14, y);
       y += 5;
       report.observations.forEach(obs => {
@@ -188,11 +201,16 @@ export default function Reports() {
             className="instrument-card"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-xs font-bold">{report.elementIdentifier}</span>
                 <StatusBadge status={report.status} />
+                {report.runwayZone && (
+                  <span className="text-[9px] uppercase tracking-widest bg-amber-950/60 text-amber-400 border border-amber-800/40 rounded px-1.5 py-0.5">
+                    {runwayZoneLabels[report.runwayZone]}
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] font-mono text-muted-foreground">
+              <span className="text-[10px] font-mono text-muted-foreground shrink-0 ml-2">
                 {format(parseISO(report.createdAt), 'dd MMM HH:mm')}
               </span>
             </div>

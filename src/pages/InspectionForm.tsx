@@ -4,9 +4,18 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Plus, Trash2, MapPin, Layers, Navigation, Map, X } from 'lucide-react';
 import { useAppState } from '@/context/AppContext';
 import { SeverityBadge } from '@/components/StatusBadge';
-import { ElementType, SeverityLevel, InspectionStatus, Observation, InspectionReport, GeoCoord } from '@/types';
+import { ElementType, SeverityLevel, InspectionStatus, Observation, InspectionReport, GeoCoord, RunwayZoneId } from '@/types';
 import { inspectorNames } from '@/data/mockData';
 import { useGeolocation } from '@/hooks/useGeolocation';
+
+const runwayZoneLabels: Record<RunwayZoneId, string> = {
+  runway: 'Pista de Pouso e Decolagem',
+  swy: 'Stopway (SWY)',
+  resa: 'RESA — Área de Seg. de Fim de Pista',
+  cwy: 'Clearway (CWY)',
+  strip: 'Faixa de Pista',
+  protected: 'Área Protegida',
+};
 
 const elementTypes: { value: ElementType; label: string }[] = [
   { value: 'runway', label: 'Pista' },
@@ -39,6 +48,7 @@ export default function InspectionForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const prefilledElementId = searchParams.get('element');
+  const runwayZone = (searchParams.get('zone') || undefined) as RunwayZoneId | undefined;
   const { position: gpsPosition } = useGeolocation();
 
   const prefilledElement = selectedAirport?.elements.find(e => e.id === prefilledElementId);
@@ -113,6 +123,7 @@ export default function InspectionForm() {
       elementType,
       elementId: prefilledElement?.id || `${elementType}-custom`,
       elementIdentifier,
+      ...(runwayZone ? { runwayZone } : {}),
       observations,
       status,
       createdAt: new Date().toISOString(),
@@ -149,6 +160,11 @@ export default function InspectionForm() {
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
                 {prefilledElement.type.replace(/_/g, ' ')} · selecionado do mapa
               </p>
+              {runwayZone && (
+                <p className="text-[10px] text-amber-400 uppercase tracking-widest mt-0.5">
+                  Zona: {runwayZoneLabels[runwayZone]}
+                </p>
+              )}
             </div>
           </div>
         )}

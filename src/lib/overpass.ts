@@ -182,7 +182,9 @@ out geom;`;
     .map(({ el, coords, centroidGeo }) => {
       const aeroway = el.tags!.aeroway;
       const type = mapAerowayToType(aeroway);
-      const ref = el.tags?.ref || el.tags?.name || `${aeroway}-${el.id}`;
+      const rawRef = el.tags?.ref || el.tags?.name || `${aeroway}-${el.id}`;
+      // OSM uses both "/" and "-" as runway end separator — normalise to "/"
+      const ref = type === 'runway' ? rawRef.replace(/^(\w+)-(\w+)$/, '$1/$2') : rawRef;
       let id = slugify(type, ref);
       if (seen.has(id)) id = `${id}-${el.id}`;
       seen.add(id);
