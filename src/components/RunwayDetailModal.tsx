@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info } from 'lucide-react';
+import { X, Info, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AirportElement } from '@/types';
 
 interface RunwayDetailModalProps {
