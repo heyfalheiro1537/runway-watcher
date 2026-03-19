@@ -6,6 +6,7 @@ import { useAppState } from '@/context/AppContext';
 import { StatusLed } from '@/components/StatusBadge';
 import { Airport } from '@/types';
 import { searchAirport, fetchAerowayElements } from '@/lib/overpass';
+import { BrandLogo } from '@/components/BrandLogo';
 
 export default function AirportSelection() {
   const { airports, selectedAirport, setSelectedAirport, addAirport } = useAppState();
@@ -88,8 +89,26 @@ export default function AirportSelection() {
   return (
     <div className="min-h-screen pb-20 px-4 pt-6">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight">InfraSegura</h1>
-        <p className="text-sm text-muted-foreground mt-1">Selecione um aeródromo ou importe um novo</p>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <BrandLogo size="lg" className="sm:h-[4.5rem] sm:w-[4.5rem]" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold tracking-tight">InfraSegura</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Selecione um aeródromo ou importe um novo
+            </p>
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground/80 mt-4 leading-relaxed">
+          <a
+            href="https://www.flaticon.com/br/icones-gratis/aviao"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:text-primary hover:underline"
+            title="avião ícones"
+          >
+            Avião ícones criados por Good Ware - Flaticon
+          </a>
+        </p>
       </header>
 
       {/* Painel de importação */}

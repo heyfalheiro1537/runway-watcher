@@ -1,0 +1,15 @@
+---
+description: React, Tailwind e componentes de UI (InfraSegura)
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# React & UI
+
+- Componentes funcionais; hooks para lógica reutilizável.
+- Estilo: **Tailwind** + classes do projeto (`bezel`, `instrument-card`, `data-strip`, `touch-target`). Preferir tokens do tema (`bg-card`, `text-muted-foreground`, `border-border`).
+- **shadcn/ui:** importar de `@/components/ui/*`; não duplicar primitivos já existentes.
+- **Animações:** Framer Motion (`motion`, `AnimatePresence`) onde já é padrão nas telas.
+- **Logo:** usar `BrandLogo` de `@/components/BrandLogo` com `/aviao.png`, não embutir URLs externas de ícone de avião sem crédito.
+- **Ícones inline:** `lucide-react` (tamanhos ~14–20px em cards).
+- **Acessibilidade:** botões com área tocável adequada; `alt` em imagens de marca.

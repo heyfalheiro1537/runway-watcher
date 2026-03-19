@@ -1,0 +1,14 @@
+---
+description: TypeScript em src/lib e src/data (mocks, feeds)
+globs:
+  - "src/lib/**/*.ts"
+  - "src/data/**/*.ts"
+alwaysApply: false
+---
+
+# TypeScript — lib e dados
+
+- Tipagem explícita em APIs públicas; evitar `any` — usar `unknown` ou tipos em `@/types`.
+- **Datas:** `date-fns` (`format`, `parseISO`); timezone ISO em strings quando mockar APIs.
+- **Novos mocks** (`src/data/*`): incluir `airportId` quando o item for específico de aeródromo; itens globais podem omitir para aparecer em todos os painéis (ver filtro em `NewsFeed`).
+- Exportar tipos junto com dados quando reutilizados em vários arquivos.

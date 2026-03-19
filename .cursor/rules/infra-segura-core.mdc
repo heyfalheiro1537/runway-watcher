@@ -1,0 +1,14 @@
+---
+description: Contexto InfraSegura (runway-watcher) — sempre aplicar
+alwaysApply: true
+---
+
+# InfraSegura — núcleo
+
+- **Produto:** app web para inspeção e segurança de infraestrutura aeroportuária (mapa SVG, relatórios, feed operacional, regulamentações).
+- **UI:** textos e labels em **português (pt-BR)**.
+- **Consultar primeiro:** `CONTEXT_FOR_AI.md` (estrutura, stack, caminhos). Integrações futuras: `AISWEB_INTEGRATION_PLAN.md`.
+- **Atribuições:** `CREDITS.md` — logo `/aviao.png`, favicon; ícones Flaticon (Good Ware). Não remover atribuições ao usar assets.
+- **Stack:** Vite, React, TypeScript, React Router, Tailwind, shadcn/ui (`src/components/ui/`), Framer Motion, TanStack Query, date-fns.
+- **Estado global:** `src/context/AppContext.tsx` (aeroporto selecionado, relatórios, papel, coordenadas pendentes).
+- **Rotas:** `src/App.tsx` — `/`, `/dashboard`, `/map`, `/inspect`, `/reports`.

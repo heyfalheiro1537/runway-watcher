@@ -1,0 +1,16 @@
+---
+description: Mapa SVG, projeção geo e dados de aeródromo
+globs:
+  - "**/MapView.tsx"
+  - "**/geoProjection.ts"
+alwaysApply: false
+---
+
+# Mapa & dados aeroportuários
+
+- **Mapa:** `src/pages/MapView.tsx` — pan/zoom em SVG, elementos de `selectedAirport.elements`, pins de observações.
+- **Projeção:** `src/lib/geoProjection.ts` — `buildTransform`, `geoToSvg`, `svgToGeo`; alterações aqui afetam mapa e pick de coordenadas.
+- **Tipos:** `src/types/index.ts` — `AirportElement`, `GeoCoord`, `InspectionReport`, etc.
+- **Mock:** `src/data/mockData.ts` — aeroportos e elementos; manter `pathData` SVG coerente com `center` quando possível.
+- **Overpass:** `src/lib/overpass.ts` — importação OSM; erros de rede e timeouts devem ser tratados na UI.
+- Ao mudar cores por tipo de elemento, alinhar com `getTypeColor` / padrões já usados no mapa.
