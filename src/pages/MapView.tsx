@@ -451,10 +451,6 @@ export default function MapView() {
         )}
       </div>
 
-      {/* Operations feed drawer */}
-      {!pickMode && !selectedElement && !selectedObservation && (
-        <OperationsFeed airportId={selectedAirport.id} />
-      )}
 
       {/* Observation popup */}
       <AnimatePresence>
