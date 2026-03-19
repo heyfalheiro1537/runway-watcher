@@ -52,6 +52,7 @@ const zones: Record<ZoneId, ZoneInfo> = {
 };
 
 export default function RunwayDetailModal({ element, open, onClose }: RunwayDetailModalProps) {
+  const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<ZoneId | null>(null);
   const [hoveredZone, setHoveredZone] = useState<ZoneId | null>(null);
 
