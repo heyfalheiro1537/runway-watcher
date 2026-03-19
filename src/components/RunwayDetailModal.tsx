@@ -310,6 +310,17 @@ export default function RunwayDetailModal({ element, open, onClose }: RunwayDeta
                 ))}
               </div>
 
+              {/* Inspection button */}
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate(`/inspect?element=${element.id}&type=${element.type}&identifier=${encodeURIComponent(element.identifier)}`);
+                }}
+                className="w-full bg-primary text-primary-foreground rounded p-3 text-sm font-medium mb-4 flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
+              >
+                <Plus size={14} /> Iniciar Inspeção
+              </button>
+
               {/* Footer definition */}
               <div className="bg-muted/50 rounded p-3 border border-border">
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
