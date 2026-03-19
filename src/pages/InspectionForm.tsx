@@ -9,22 +9,29 @@ import { inspectorNames } from '@/data/mockData';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 const elementTypes: { value: ElementType; label: string }[] = [
-  { value: 'runway', label: 'Runway' },
+  { value: 'runway', label: 'Pista' },
   { value: 'taxiway', label: 'Taxiway' },
-  { value: 'apron', label: 'Apron' },
-  { value: 'safety_strip', label: 'Safety Strip' },
-  { value: 'shoulder', label: 'Shoulder' },
+  { value: 'apron', label: 'Pátio' },
+  { value: 'safety_strip', label: 'Faixa de Seg.' },
+  { value: 'shoulder', label: 'Acostamento' },
   { value: 'terminal', label: 'Terminal' },
   { value: 'hangar', label: 'Hangar' },
-  { value: 'holding_position', label: 'Hold Pos.' },
-  { value: 'other', label: 'Other' },
+  { value: 'holding_position', label: 'Pos. Espera' },
+  { value: 'other', label: 'Outro' },
 ];
 
 const severityLevels: SeverityLevel[] = ['low', 'medium', 'high', 'critical'];
+const severityLabels: Record<SeverityLevel, string> = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+  critical: 'Crítica',
+};
+
 const statusOptions: { value: InspectionStatus; label: string }[] = [
-  { value: 'regular', label: 'Regular' },
-  { value: 'requires_attention', label: 'Requires Attention' },
-  { value: 'requires_intervention', label: 'Requires Intervention' },
+  { value: 'regular', label: 'Normal' },
+  { value: 'requires_attention', label: 'Requer Atenção' },
+  { value: 'requires_intervention', label: 'Requer Intervenção' },
 ];
 
 export default function InspectionForm() {
@@ -42,7 +49,6 @@ export default function InspectionForm() {
   const [status, setStatus] = useState<InspectionStatus>('regular');
   const [observations, setObservations] = useState<Observation[]>([]);
 
-  // New observation form — restore draft if returning from map pick
   const [obsDescription, setObsDescription] = useState(() => pendingObsDraft?.description ?? '');
   const [obsSeverity, setObsSeverity] = useState<SeverityLevel>(() => pendingObsDraft?.severity ?? 'low');
   const [obsGeoCoord, setObsGeoCoord] = useState<GeoCoord | null>(() => {
@@ -50,7 +56,6 @@ export default function InspectionForm() {
     return null;
   });
 
-  // Clear context drafts after they've been consumed by the initial state
   useEffect(() => {
     if (pendingPickCoord) setPendingPickCoord(null);
     if (pendingObsDraft) setPendingObsDraft(null);
@@ -69,7 +74,6 @@ export default function InspectionForm() {
   };
 
   const openMapPick = () => {
-    // Save current obs draft so it survives the navigation
     setPendingObsDraft({ description: obsDescription, severity: obsSeverity });
     const params = new URLSearchParams({ pickLocation: 'true' });
     if (prefilledElementId) params.set('element', prefilledElementId);
@@ -124,34 +128,34 @@ export default function InspectionForm() {
 
   return (
     <div className="min-h-screen pb-20 px-4 pt-4">
-      {/* Header */}
+      {/* Cabeçalho */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate(-1)} className="touch-target -ml-2">
           <ChevronLeft size={20} className="text-muted-foreground" />
         </button>
         <div>
-          <h1 className="text-sm font-semibold">New Inspection Report</h1>
+          <h1 className="text-sm font-semibold">Novo Relatório de Inspeção</h1>
           <span className="text-xs font-mono text-muted-foreground">{selectedAirport.iataCode}</span>
         </div>
       </div>
 
       <div className="space-y-5">
-        {/* Pre-selected element banner */}
+        {/* Banner do elemento pré-selecionado */}
         {prefilledElement && (
           <div className="flex items-center gap-3 bezel border-primary/40 bg-primary/5 p-3">
             <Layers size={16} className="text-primary shrink-0" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-primary truncate">{prefilledElement.identifier}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-                {prefilledElement.type.replace(/_/g, ' ')} · selected from map
+                {prefilledElement.type.replace(/_/g, ' ')} · selecionado do mapa
               </p>
             </div>
           </div>
         )}
 
-        {/* Inspector */}
+        {/* Inspetor */}
         <div>
-          <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Inspector</label>
+          <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Inspetor</label>
           <select
             value={inspectorName}
             onChange={e => setInspectorName(e.target.value)}
@@ -163,10 +167,10 @@ export default function InspectionForm() {
           </select>
         </div>
 
-        {/* Element Type */}
+        {/* Tipo de elemento */}
         {!prefilledElement && (
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Element Type</label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Tipo de Elemento</label>
             <div className="grid grid-cols-3 gap-2">
               {elementTypes.map(et => (
                 <button
@@ -183,17 +187,17 @@ export default function InspectionForm() {
           </div>
         )}
 
-        {/* Element Identifier */}
+        {/* Identificador do elemento */}
         {!prefilledElement && (
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Element Identifier</label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Identificador</label>
             {matchingElements.length > 0 ? (
               <select
                 value={elementIdentifier}
                 onChange={e => setElementIdentifier(e.target.value)}
                 className="w-full bg-card border border-border rounded p-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
               >
-                <option value="">Select element...</option>
+                <option value="">Selecionar elemento...</option>
                 {matchingElements.map(el => (
                   <option key={el.id} value={el.identifier}>{el.identifier}</option>
                 ))}
@@ -202,16 +206,16 @@ export default function InspectionForm() {
               <input
                 value={elementIdentifier}
                 onChange={e => setElementIdentifier(e.target.value)}
-                placeholder="e.g. RWY 09/27"
+                placeholder="Ex: RWY 09/27"
                 className="w-full bg-card border border-border rounded p-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-muted-foreground"
               />
             )}
           </div>
         )}
 
-        {/* Overall Status */}
+        {/* Status geral */}
         <div>
-          <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Overall Status</label>
+          <label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Status Geral</label>
           <div className="grid grid-cols-3 gap-2">
             {statusOptions.map(s => {
               const color = s.value === 'regular' ? 'border-status-regular text-status-regular'
@@ -232,15 +236,14 @@ export default function InspectionForm() {
           </div>
         </div>
 
-        {/* Observations */}
+        {/* Observações */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Observations ({observations.length})
+              Observações ({observations.length})
             </label>
           </div>
 
-          {/* Existing observations */}
           {observations.map(obs => (
             <motion.div
               key={obs.id}
@@ -263,19 +266,19 @@ export default function InspectionForm() {
             </motion.div>
           ))}
 
-          {/* Add observation */}
+          {/* Adicionar observação */}
           <div className="bezel p-3 space-y-3">
             <textarea
               value={obsDescription}
               onChange={e => setObsDescription(e.target.value)}
-              placeholder="Describe the observation..."
+              placeholder="Descreva a observação..."
               rows={2}
               className="w-full bg-muted border-none rounded p-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
             />
 
-            {/* Severity */}
+            {/* Severidade */}
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Severity</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Severidade</span>
               <div className="grid grid-cols-4 gap-2">
                 {severityLevels.map(sev => (
                   <button
@@ -290,15 +293,15 @@ export default function InspectionForm() {
                         : 'text-muted-foreground'
                     }`}
                   >
-                    {sev}
+                    {severityLabels[sev]}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Location picker */}
+            {/* Seletor de localização */}
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Location</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Localização</span>
 
               {obsGeoCoord ? (
                 <div className="flex items-center gap-2 bg-muted rounded p-2">
@@ -323,7 +326,7 @@ export default function InspectionForm() {
                     onClick={openMapPick}
                     className="flex-1 bezel p-2 text-[10px] font-medium flex items-center justify-center gap-1.5 active:translate-y-0.5 transition-all text-muted-foreground hover:text-foreground"
                   >
-                    <Map size={11} /> Tap Map
+                    <Map size={11} /> Marcar no Mapa
                   </button>
                 </div>
               )}
@@ -334,18 +337,18 @@ export default function InspectionForm() {
               disabled={!obsDescription.trim()}
               className="w-full bg-secondary text-secondary-foreground rounded p-3 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-40 active:translate-y-0.5 transition-all"
             >
-              <Plus size={14} /> Add Observation
+              <Plus size={14} /> Adicionar Observação
             </button>
           </div>
         </div>
 
-        {/* Submit */}
+        {/* Enviar */}
         <button
           onClick={submitReport}
           disabled={!elementIdentifier || observations.length === 0}
           className="w-full bg-primary text-primary-foreground rounded p-4 text-sm font-semibold disabled:opacity-40 active:translate-y-0.5 transition-all"
         >
-          Submit Report
+          Enviar Relatório
         </button>
       </div>
     </div>

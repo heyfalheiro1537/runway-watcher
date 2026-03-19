@@ -6,7 +6,7 @@ import { useAppState } from '@/context/AppContext';
 import { StatusBadge, SeverityBadge } from '@/components/StatusBadge';
 import { format, parseISO, isThisWeek } from 'date-fns';
 import RegulationsPanel from '@/components/RegulationsPanel';
-import NewsFeed from '@/components/NewsFeed';
+import OperationsFeed from '@/components/OperationsFeed';
 
 export default function Dashboard() {
   const { selectedAirport, reports, role } = useAppState();
@@ -36,9 +36,9 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center pb-20 px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">No airport selected</p>
+          <p className="text-muted-foreground mb-4">Nenhum aeroporto selecionado</p>
           <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">
-            Go to Hangar
+            Ir para o Hangar
           </button>
         </div>
       </div>
@@ -46,10 +46,10 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { label: 'Inspections This Week', value: weeklyCount, icon: CheckCircle, color: 'text-status-regular' },
-    { label: 'Critical', value: severityCounts.critical, icon: AlertOctagon, color: 'text-severity-critical' },
-    { label: 'High', value: severityCounts.high, icon: AlertTriangle, color: 'text-severity-high' },
-    { label: 'Medium / Low', value: severityCounts.medium + severityCounts.low, icon: Clock, color: 'text-severity-medium' },
+    { label: 'Inspeções na Semana', value: weeklyCount, icon: CheckCircle, color: 'text-status-regular' },
+    { label: 'Críticas', value: severityCounts.critical, icon: AlertOctagon, color: 'text-severity-critical' },
+    { label: 'Altas', value: severityCounts.high, icon: AlertTriangle, color: 'text-severity-high' },
+    { label: 'Médias / Baixas', value: severityCounts.medium + severityCounts.low, icon: Clock, color: 'text-severity-medium' },
   ];
 
   return (
@@ -58,14 +58,14 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-lg font-bold">{selectedAirport.iataCode}</span>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Dashboard</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Painel</span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">{selectedAirport.name}</p>
         </div>
         <span className="text-xs font-mono text-muted-foreground">{format(new Date(), 'dd MMM yyyy HH:mm')}</span>
       </header>
 
-      {/* Stats Grid */}
+      {/* Grid de estatísticas */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {statCards.map((stat, i) => (
           <motion.div
@@ -84,25 +84,25 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Ações rápidas */}
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => navigate('/map')}
           className="flex-1 bezel p-3 text-sm font-medium flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
         >
-          Open Map <ArrowRight size={14} />
+          Abrir Mapa <ArrowRight size={14} />
         </button>
         <button
           onClick={() => navigate('/reports')}
           className="flex-1 bezel p-3 text-sm font-medium flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
         >
-          View Reports <ArrowRight size={14} />
+          Ver Relatórios <ArrowRight size={14} />
         </button>
       </div>
 
-      {/* Recent Reports Timeline */}
+      {/* Timeline de relatórios recentes */}
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Recent Reports</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Relatórios Recentes</h2>
         <div className="space-y-2">
           {airportReports.slice(0, 8).map((report, i) => (
             <motion.div
@@ -140,10 +140,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Regulations & News Feed */}
+      {/* Regulamentações e Feed de Operações */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <RegulationsPanel />
-        <NewsFeed airportId={selectedAirport.id} />
+        <OperationsFeed airportId={selectedAirport.id} />
       </div>
     </div>
   );

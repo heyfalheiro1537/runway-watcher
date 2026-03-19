@@ -12,6 +12,8 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationDot, LocationReadout } from '@/components/LocationIndicator';
 import RegulationsPanel from '@/components/RegulationsPanel';
 import NewsFeed from '@/components/NewsFeed';
+import RunwayDetailModal from '@/components/RunwayDetailModal';
+import OperationsFeed from '@/components/OperationsFeed';
 
 const severityIcons = {
   low: CheckCircle,
@@ -37,6 +39,7 @@ export default function MapView() {
   const [pickDraft, setPickDraft] = useState<{ svgPos: { x: number; y: number }; geo: GeoCoord } | null>(null);
   const activePointers = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDist = useRef<number | null>(null);
+  const [runwayModalElement, setRunwayModalElement] = useState<AirportElement | null>(null);
 
   const airportReports = useMemo(() =>
     reports.filter(r => r.airportId === selectedAirport?.id),
@@ -67,7 +70,6 @@ export default function MapView() {
       pickDownPos.current = { x: e.clientX, y: e.clientY };
       lastPinchDist.current = null;
     } else if (activePointers.current.size === 2) {
-      // Second finger down — switch to pinch mode
       setIsPanning(false);
       pickDownPos.current = null;
       const pts = Array.from(activePointers.current.values());
@@ -132,7 +134,6 @@ export default function MapView() {
       }
       pickDownPos.current = null;
     } else if (activePointers.current.size === 1) {
-      // Pinch ended, one finger still down — resume pan from that finger
       lastPinchDist.current = null;
       pickDownPos.current = null;
       const remaining = Array.from(activePointers.current.values())[0];
@@ -173,8 +174,8 @@ export default function MapView() {
     return (
       <div className="min-h-screen flex items-center justify-center pb-20 px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">No airport selected</p>
-          <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">Go to Hangar</button>
+          <p className="text-muted-foreground mb-4">Nenhum aeroporto selecionado</p>
+          <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">Ir para o Hangar</button>
         </div>
       </div>
     );
@@ -194,6 +195,18 @@ export default function MapView() {
     navigate(`/inspect?${params.toString()}`);
   };
 
+  const handleElementClick = (element: AirportElement, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pickMode) return;
+    
+    if (element.type === 'runway') {
+      setRunwayModalElement(element);
+    }
+    
+    setSelectedElement(element);
+    setSelectedObservation(null);
+  };
+
   return (
     <div className="fixed inset-0 pb-16 flex flex-col bg-surface-sunken">
       {/* Pick-mode banner */}
@@ -202,7 +215,7 @@ export default function MapView() {
           <div className="flex items-center gap-2">
             <MapPin size={16} className="text-amber-400" />
             <span className="text-sm font-medium text-amber-200">
-              {pickDraft ? 'Pin placed — confirm or tap again' : 'Tap the map to mark observation location'}
+              {pickDraft ? 'Pino posicionado — confirme ou toque novamente' : 'Toque no mapa para marcar a localização'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -210,14 +223,14 @@ export default function MapView() {
               onClick={cancelPick}
               className="px-3 py-1.5 text-xs rounded border border-amber-700/50 text-amber-300 hover:bg-amber-900/40 transition-colors"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               onClick={confirmPick}
               disabled={!pickDraft}
               className="px-3 py-1.5 text-xs rounded bg-amber-500 text-amber-950 font-semibold disabled:opacity-40 disabled:cursor-not-allowed active:translate-y-0.5 transition-transform"
             >
-              Confirm
+              Confirmar
             </button>
           </div>
         </div>
@@ -226,14 +239,14 @@ export default function MapView() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm z-10">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-bold">{selectedAirport.iataCode}</span>
-          <span className="text-xs text-muted-foreground">AIRPORT MAP</span>
+          <span className="text-xs text-muted-foreground">MAPA DO AEROPORTO</span>
         </div>
         {role === 'inspector' && (
           <button
             onClick={() => navigate('/inspect')}
             className="touch-target bg-primary text-primary-foreground rounded px-3 py-1.5 text-xs font-medium flex items-center gap-1 active:translate-y-0.5 transition-transform"
           >
-            <Plus size={14} /> New Report
+            <Plus size={14} /> Novo Relatório
           </button>
         )}
       </div>
@@ -260,7 +273,7 @@ export default function MapView() {
           </defs>
           <rect x="-200" y="-200" width="1200" height="900" fill="url(#grid)" />
 
-          {/* Airport elements — background first, runways on top */}
+          {/* Airport elements */}
           {[...selectedAirport.elements].sort((a, b) => {
             const order = (t: string) => {
               switch (t) {
@@ -280,7 +293,6 @@ export default function MapView() {
           }).map(element => {
             const isSelected = selectedElement?.id === element.id;
             const typeColor = getTypeColor(element.type);
-            // Open paths (no Z) are centerlines — render as thick strokes with no fill
             const isOpenPath = !element.pathData.trimEnd().endsWith('Z');
             const centerlineStroke =
               element.type === 'runway' ? 10 :
@@ -308,26 +320,19 @@ export default function MapView() {
                 }}
                 transition={{ duration: 0.15 }}
                 whileTap={{ strokeOpacity: 1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (pickMode) return;
-                  setSelectedElement(element);
-                  setSelectedObservation(null);
-                }}
+                onClick={(e) => handleElementClick(element, e as any)}
               />
             );
           })}
 
           {/* GPS Location dot */}
           {gpsPosition && (() => {
-            // Map GPS to SVG space using first element as reference
             const refEl = selectedAirport.elements[0];
             if (!refEl) return null;
             const refMatch = refEl.pathData.match(/M\s*(\d+)\s+(\d+)/);
             if (!refMatch) return null;
             const refSvgX = parseFloat(refMatch[1]);
             const refSvgY = parseFloat(refMatch[2]);
-            // Scale: rough px per degree
             const scale = 20000;
             const dotX = refSvgX + (gpsPosition.lng - refEl.center.lng) * scale;
             const dotY = refSvgY - (gpsPosition.lat - refEl.center.lat) * scale;
@@ -338,7 +343,6 @@ export default function MapView() {
           {allObservations.map(obs => {
             const pos = obsToSvg(obs);
             if (!pos) return null;
-            const Icon = severityIcons[obs.severity];
             const color = obs.severity === 'critical' ? 'hsl(0,84%,60%)'
               : obs.severity === 'high' ? 'hsl(25,95%,53%)'
               : obs.severity === 'medium' ? 'hsl(38,92%,50%)'
@@ -363,10 +367,9 @@ export default function MapView() {
           {/* Pick-mode draft pin */}
           {pickMode && pickDraft && (() => {
             const s = viewBox.w / 800;
-            const r = 11 * s;     // head radius
-            const neck = 4 * s;   // narrow point below head
-            const stem = 15 * s;  // stem height from tip to neck
-            // Teardrop path: tip at (0,0), body above
+            const r = 11 * s;
+            const neck = 4 * s;
+            const stem = 15 * s;
             const d = [
               `M 0 0`,
               `C ${-neck} ${-(stem * 0.4)} ${-r} ${-(stem + r * 0.5)} ${-r} ${-(stem + r)}`,
@@ -376,11 +379,8 @@ export default function MapView() {
             ].join(' ');
             return (
               <g transform={`translate(${pickDraft.svgPos.x}, ${pickDraft.svgPos.y})`}>
-                {/* Shadow */}
                 <ellipse cx={0} cy={1.5 * s} rx={5 * s} ry={2 * s} fill="hsl(0,0%,0%)" fillOpacity={0.25} />
-                {/* Pin body */}
                 <path d={d} fill="hsl(38,96%,54%)" />
-                {/* Inner circle */}
                 <circle cx={0} cy={-(stem + r)} r={r * 0.42} fill="hsl(222,47%,10%)" />
               </g>
             );
@@ -432,7 +432,7 @@ export default function MapView() {
             setViewBox({ x: dotX - 200, y: dotY - 150, w: 400, h: 300 });
           }}
           className="absolute top-3 right-3 touch-target bezel p-2.5 rounded-full active:translate-y-0.5 transition-transform z-10"
-          title="Show my location"
+          title="Mostrar minha localização"
         >
           <Locate size={18} className="text-primary" />
         </button>
@@ -450,6 +450,11 @@ export default function MapView() {
           </div>
         )}
       </div>
+
+      {/* Operations feed drawer */}
+      {!pickMode && !selectedElement && !selectedObservation && (
+        <OperationsFeed airportId={selectedAirport.id} />
+      )}
 
       {/* Observation popup */}
       <AnimatePresence>
@@ -502,23 +507,33 @@ export default function MapView() {
               </div>
 
               <div className="data-strip mb-4">
-                <span>TYPE: {selectedElement.type.replace('_', ' ').toUpperCase()}</span>
+                <span>TIPO: {selectedElement.type.replace('_', ' ').toUpperCase()}</span>
               </div>
+
+              {/* Runway detail button */}
+              {selectedElement.type === 'runway' && (
+                <button
+                  onClick={() => setRunwayModalElement(selectedElement)}
+                  className="w-full bg-muted text-foreground rounded p-3 text-sm font-medium mb-3 flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform border border-border hover:border-primary/50"
+                >
+                  <Info size={14} className="text-primary" /> Ver Área Protegida
+                </button>
+              )}
 
               {role === 'inspector' && (
                 <button
                   onClick={() => navigate(`/inspect?element=${selectedElement.id}&type=${selectedElement.type}&identifier=${encodeURIComponent(selectedElement.identifier)}`)}
                   className="w-full bg-primary text-primary-foreground rounded p-3 text-sm font-medium mb-4 flex items-center justify-center gap-2 active:translate-y-0.5 transition-transform"
                 >
-                  <Plus size={14} /> Start Inspection
+                  <Plus size={14} /> Iniciar Inspeção
                 </button>
               )}
 
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Inspection History
+                Histórico de Inspeções
               </h3>
               {elementReports.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No reports for this element</p>
+                <p className="text-xs text-muted-foreground">Nenhum relatório para este elemento</p>
               ) : (
                 <div className="space-y-2">
                   {elementReports.map(report => (
@@ -540,12 +555,12 @@ export default function MapView() {
                 </div>
               )}
 
-              {/* Regulations for this element type */}
+              {/* Regulamentações */}
               <div className="mt-5">
                 <RegulationsPanel elementType={selectedElement.type} />
               </div>
 
-              {/* Feed filtered to this airport */}
+              {/* Feed filtrado */}
               <div className="mt-5">
                 <NewsFeed airportId={selectedAirport.id} compact />
               </div>
@@ -553,6 +568,15 @@ export default function MapView() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Runway Detail Modal */}
+      {runwayModalElement && (
+        <RunwayDetailModal
+          element={runwayModalElement}
+          open={!!runwayModalElement}
+          onClose={() => setRunwayModalElement(null)}
+        />
+      )}
     </div>
   );
 }

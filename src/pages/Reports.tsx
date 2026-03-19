@@ -40,12 +40,12 @@ export default function Reports() {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`${selectedAirport?.iataCode} - Inspection Reports`, 14, 20);
+    doc.text(`${selectedAirport?.iataCode} - Relatórios de Inspeção`, 14, 20);
     doc.setFontSize(10);
-    doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
+    doc.text(`Gerado em: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
 
     let y = 40;
-    filteredReports.forEach((report, i) => {
+    filteredReports.forEach((report) => {
       if (y > 270) {
         doc.addPage();
         y = 20;
@@ -54,7 +54,7 @@ export default function Reports() {
       doc.text(`${report.elementIdentifier} - ${report.status.replace(/_/g, ' ').toUpperCase()}`, 14, y);
       y += 6;
       doc.setFontSize(9);
-      doc.text(`Inspector: ${report.inspectorName} | Date: ${format(parseISO(report.createdAt), 'dd MMM yyyy HH:mm')}`, 14, y);
+      doc.text(`Inspetor: ${report.inspectorName} | Data: ${format(parseISO(report.createdAt), 'dd MMM yyyy HH:mm')}`, 14, y);
       y += 5;
       report.observations.forEach(obs => {
         doc.text(`  [${obs.severity.toUpperCase()}] ${obs.description}`, 14, y);
@@ -65,15 +65,15 @@ export default function Reports() {
       y += 4;
     });
 
-    doc.save(`${selectedAirport?.iataCode}_reports_${format(new Date(), 'yyyyMMdd')}.pdf`);
+    doc.save(`${selectedAirport?.iataCode}_relatorios_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
 
   if (!selectedAirport) {
     return (
       <div className="min-h-screen flex items-center justify-center pb-20 px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">No airport selected</p>
-          <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">Go to Hangar</button>
+          <p className="text-muted-foreground mb-4">Nenhum aeroporto selecionado</p>
+          <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">Ir para o Hangar</button>
         </div>
       </div>
     );
@@ -85,16 +85,16 @@ export default function Reports() {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-sm font-bold">{selectedAirport.iataCode}</span>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Reports</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Relatórios</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{filteredReports.length} reports</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{filteredReports.length} relatórios</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`touch-target bezel px-3 py-1.5 text-xs font-medium flex items-center gap-1 ${showFilters ? 'border-primary text-primary' : ''}`}
           >
-            <Filter size={12} /> Filter
+            <Filter size={12} /> Filtrar
           </button>
           {role === 'supervisor' && (
             <button
@@ -107,7 +107,7 @@ export default function Reports() {
         </div>
       </header>
 
-      {/* Filters */}
+      {/* Filtros */}
       {showFilters && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -123,43 +123,43 @@ export default function Reports() {
                 onChange={e => setFilterStatus(e.target.value as InspectionStatus | '')}
                 className="w-full bg-muted border-none rounded p-2 text-xs outline-none"
               >
-                <option value="">All</option>
-                <option value="regular">Regular</option>
-                <option value="requires_attention">Attention</option>
-                <option value="requires_intervention">Intervention</option>
+                <option value="">Todos</option>
+                <option value="regular">Normal</option>
+                <option value="requires_attention">Atenção</option>
+                <option value="requires_intervention">Intervenção</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Severity</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Severidade</label>
               <select
                 value={filterSeverity}
                 onChange={e => setFilterSeverity(e.target.value as SeverityLevel | '')}
                 className="w-full bg-muted border-none rounded p-2 text-xs outline-none"
               >
-                <option value="">All</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="">Todas</option>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Element</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Elemento</label>
               <select
                 value={filterElement}
                 onChange={e => setFilterElement(e.target.value as ElementType | '')}
                 className="w-full bg-muted border-none rounded p-2 text-xs outline-none"
               >
-                <option value="">All</option>
-                <option value="runway">Runway</option>
+                <option value="">Todos</option>
+                <option value="runway">Pista</option>
                 <option value="taxiway">Taxiway</option>
-                <option value="apron">Apron</option>
-                <option value="safety_strip">Safety Strip</option>
-                <option value="shoulder">Shoulder</option>
+                <option value="apron">Pátio</option>
+                <option value="safety_strip">Faixa de Seg.</option>
+                <option value="shoulder">Acostamento</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Date Range</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Período</label>
               <div className="flex gap-1">
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
                   className="flex-1 bg-muted border-none rounded p-2 text-[10px] outline-none" />
@@ -172,12 +172,12 @@ export default function Reports() {
             onClick={() => { setFilterStatus(''); setFilterSeverity(''); setFilterElement(''); setDateFrom(''); setDateTo(''); }}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
-            Clear filters
+            Limpar filtros
           </button>
         </motion.div>
       )}
 
-      {/* Reports list */}
+      {/* Lista de relatórios */}
       <div className="space-y-2">
         {filteredReports.map((report, i) => (
           <motion.div
@@ -196,7 +196,7 @@ export default function Reports() {
                 {format(parseISO(report.createdAt), 'dd MMM HH:mm')}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">Inspector: {report.inspectorName}</p>
+            <p className="text-xs text-muted-foreground mb-2">Inspetor: {report.inspectorName}</p>
             <div className="space-y-1.5">
               {report.observations.map(obs => (
                 <div key={obs.id} className="flex items-start gap-2">
@@ -209,7 +209,7 @@ export default function Reports() {
         ))}
         {filteredReports.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">No reports match the current filters</p>
+            <p className="text-sm text-muted-foreground">Nenhum relatório corresponde aos filtros atuais</p>
           </div>
         )}
       </div>

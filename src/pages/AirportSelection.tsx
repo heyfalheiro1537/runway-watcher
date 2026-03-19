@@ -11,7 +11,6 @@ export default function AirportSelection() {
   const { airports, selectedAirport, setSelectedAirport, addAirport } = useAppState();
   const navigate = useNavigate();
 
-  // Import state
   const [searchQuery, setSearchQuery] = useState('');
   const [coordLat, setCoordLat] = useState('');
   const [coordLng, setCoordLng] = useState('');
@@ -37,25 +36,23 @@ export default function AirportSelection() {
       let lat: number, lng: number, name: string, code: string;
 
       if (importMode === 'search') {
-        if (!searchQuery.trim()) throw new Error('Enter an airport name or ICAO/IATA code');
+        if (!searchQuery.trim()) throw new Error('Informe o nome ou código ICAO/IATA do aeroporto');
         const result = await searchAirport(searchQuery.trim());
-        if (!result) throw new Error('Airport not found. Try a different name or use coordinates.');
+        if (!result) throw new Error('Aeroporto não encontrado. Tente outro nome ou use coordenadas.');
         lat = result.lat;
         lng = result.lng;
-        // Extract a short name
         name = result.displayName.split(',')[0];
         code = searchQuery.trim().toUpperCase().slice(0, 4);
       } else {
         lat = parseFloat(coordLat);
         lng = parseFloat(coordLng);
-        if (isNaN(lat) || isNaN(lng)) throw new Error('Enter valid latitude and longitude');
-        name = `Airport at ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+        if (isNaN(lat) || isNaN(lng)) throw new Error('Informe latitude e longitude válidas');
+        name = `Aeroporto em ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
         code = 'CUST';
       }
 
       const airportId = `ovp-${Date.now()}`;
       const elements = await fetchAerowayElements(lat, lng, airportId);
-
       const runwayCount = elements.filter(e => e.type === 'runway').length;
 
       const newAirport: Airport = {
@@ -75,7 +72,7 @@ export default function AirportSelection() {
       setCoordLat('');
       setCoordLng('');
     } catch (err: any) {
-      setImportError(err.message || 'Import failed');
+      setImportError(err.message || 'Falha na importação');
     } finally {
       setImporting(false);
     }
@@ -91,18 +88,17 @@ export default function AirportSelection() {
   return (
     <div className="min-h-screen pb-20 px-4 pt-6">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight">RunwayNotes</h1>
-        <p className="text-sm text-muted-foreground mt-1">Select an airfield or import a new one</p>
+        <h1 className="text-xl font-semibold tracking-tight">InfraSegura</h1>
+        <p className="text-sm text-muted-foreground mt-1">Selecione um aeródromo ou importe um novo</p>
       </header>
 
-      {/* Import panel */}
+      {/* Painel de importação */}
       <div className="bezel p-4 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <MapPin size={16} className="text-primary" />
-          <span className="text-sm font-medium">Import Airport</span>
+          <span className="text-sm font-medium">Importar Aeroporto</span>
         </div>
 
-        {/* Mode toggle */}
         <div className="flex gap-1 mb-3">
           <button
             onClick={() => setImportMode('search')}
@@ -112,7 +108,7 @@ export default function AirportSelection() {
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            Search by name
+            Buscar por nome
           </button>
           <button
             onClick={() => setImportMode('coords')}
@@ -122,7 +118,7 @@ export default function AirportSelection() {
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            Coordinates
+            Coordenadas
           </button>
         </div>
 
@@ -133,7 +129,7 @@ export default function AirportSelection() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleImport()}
-              placeholder="e.g. SFO, Heathrow, LFPG…"
+              placeholder="Ex: GRU, Congonhas, SBSP…"
               className="flex-1 bg-muted border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
@@ -142,7 +138,7 @@ export default function AirportSelection() {
               className="touch-target bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium flex items-center gap-1.5 active:translate-y-0.5 transition-transform disabled:opacity-50"
             >
               {importing ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-              {importing ? 'Loading…' : 'Fetch'}
+              {importing ? 'Buscando…' : 'Buscar'}
             </button>
           </div>
         ) : (
@@ -168,7 +164,7 @@ export default function AirportSelection() {
               className="touch-target bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium flex items-center gap-1.5 active:translate-y-0.5 transition-transform disabled:opacity-50"
             >
               {importing ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-              {importing ? 'Loading…' : 'Fetch'}
+              {importing ? 'Buscando…' : 'Buscar'}
             </button>
           </div>
         )}
@@ -178,13 +174,13 @@ export default function AirportSelection() {
         )}
 
         <p className="text-[10px] text-muted-foreground mt-2">
-          Fetches real aeroway geometry from OpenStreetMap via Overpass API
+          Busca geometria real de aerovias do OpenStreetMap via Overpass API
         </p>
       </div>
 
-      {/* Airport grid */}
+      {/* Grid de aeroportos */}
       <div className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Active Airfields</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Aeródromos Ativos</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {airports.map((airport, i) => {
             const isSelected = selectedAirport?.id === airport.id;
@@ -208,15 +204,15 @@ export default function AirportSelection() {
                   </div>
                   <p className="text-sm text-foreground mb-2">{airport.name}</p>
                   <div className="data-strip">
-                    <span>RWYS: {airport.runways}</span>
+                    <span>PISTAS: {airport.runways}</span>
                     <span className="text-border">|</span>
                     <span>ELEV: {airport.elevation}FT</span>
                     <span className="text-border">|</span>
-                    <span>MAG VAR: {airport.magneticVariation}</span>
+                    <span>VAR MAG: {airport.magneticVariation}</span>
                   </div>
                   {airport.elements.length > 0 && (
                     <p className="text-[10px] text-muted-foreground mt-2">
-                      {airport.elements.length} elements mapped
+                      {airport.elements.length} elementos mapeados
                     </p>
                   )}
                 </button>
@@ -226,7 +222,7 @@ export default function AirportSelection() {
         </div>
       </div>
 
-      {/* Selected airport detail + enter */}
+      {/* Detalhe do aeroporto selecionado */}
       {selectedAirport && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -241,14 +237,14 @@ export default function AirportSelection() {
                 <span className="text-sm text-muted-foreground">{selectedAirport.city}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {selectedAirport.elements.length} elements mapped
+                {selectedAirport.elements.length} elementos mapeados
               </p>
             </div>
             <button
               onClick={handleEnterAirport}
               className="touch-target bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium flex items-center gap-1 active:translate-y-0.5 transition-transform"
             >
-              Enter <ChevronRight size={16} />
+              Entrar <ChevronRight size={16} />
             </button>
           </div>
         </motion.div>
