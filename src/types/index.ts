@@ -80,9 +80,17 @@ export type IncidentType = 'WILD' | 'FOD';
 export interface LedgerEntry {
   id: string;
   entityRef: string;
-  linearCoord: string;
+  estaca: number;       // distância da cabeceira (m)
+  afastamento: number;  // afastamento lateral do eixo (m), negativo=esquerda
   incidentType: IncidentType;
   catalogVersion: CatalogVersion;
   body: Record<string, string>;
   recordedAt: string;
+}
+
+export interface RunwayFeature {
+  id: string;
+  comprimento_metros: number;
+  largura_metros: number;
+  faixa_metros: number;
 }
