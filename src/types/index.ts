@@ -73,3 +73,16 @@ export interface DashboardStats {
   openOccurrences: Record<SeverityLevel, number>;
   recentReports: InspectionReport[];
 }
+
+export type CatalogVersion = 'v2026.1' | 'v2028.1';
+export type IncidentType = 'WILD' | 'FOD';
+
+export interface LedgerEntry {
+  id: string;
+  entityRef: string;
+  linearCoord: string;
+  incidentType: IncidentType;
+  catalogVersion: CatalogVersion;
+  body: Record<string, string>;
+  recordedAt: string;
+}
