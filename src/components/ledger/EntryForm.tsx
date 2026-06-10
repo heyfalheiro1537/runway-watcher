@@ -8,31 +8,42 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppState } from '@/context/AppContext';
 import { CATALOG, CATALOG_VERSIONS, INCIDENT_TYPES } from '@/data/catalog';
+import { RUNWAY_FEATURE } from '@/data/runwayFeature';
 import type { CatalogVersion, IncidentType, LedgerEntry } from '@/types';
 
 export default function EntryForm() {
   const { catalogVersion, setCatalogVersion, ledger, addLedgerEntry, selectedAirport } = useAppState();
   const [eventId, setEventId] = useState('');
-  const [entityRef, setEntityRef] = useState('');
-  const [linearCoord, setLinearCoord] = useState('');
+  const [entityRef, setEntityRef] = useState(RUNWAY_FEATURE.id);
+  const [estaca, setEstaca] = useState('');
+  const [afastamento, setAfastamento] = useState('');
   const [incidentType, setIncidentType] = useState<IncidentType>('WILD');
   const [body, setBody] = useState<Record<string, string>>({});
 
   const fields = useMemo(() => CATALOG[catalogVersion][incidentType], [catalogVersion, incidentType]);
 
-  // Reset dynamic body when catalog/type changes (Zona de Mutabilidade)
   useEffect(() => {
     setBody({});
   }, [catalogVersion, incidentType]);
 
   const entitySuggestions = useMemo(
-    () => selectedAirport?.elements.map(e => e.identifier) ?? [],
+    () => [RUNWAY_FEATURE.id, ...(selectedAirport?.elements.map(e => e.identifier) ?? [])],
     [selectedAirport],
   );
 
   const handleSubmit = () => {
-    if (!eventId.trim() || !entityRef.trim() || !linearCoord.trim()) {
+    const estacaNum = Number(estaca);
+    const afastNum = Number(afastamento);
+    if (!eventId.trim() || !entityRef.trim() || estaca === '' || afastamento === '') {
       toast.error('Preencha todos os campos do envelope');
+      return;
+    }
+    if (Number.isNaN(estacaNum) || Number.isNaN(afastNum)) {
+      toast.error('Estaca e Afastamento devem ser numéricos');
+      return;
+    }
+    if (estacaNum < 0 || estacaNum > RUNWAY_FEATURE.comprimento_metros) {
+      toast.error(`Estaca fora do gerador (0–${RUNWAY_FEATURE.comprimento_metros}m)`);
       return;
     }
     const missing = fields.find(f => !body[f.key]?.toString().trim());
@@ -48,7 +59,8 @@ export default function EntryForm() {
     const entry: LedgerEntry = {
       id: eventId.trim(),
       entityRef: entityRef.trim(),
-      linearCoord: linearCoord.trim(),
+      estaca: estacaNum,
+      afastamento: afastNum,
       incidentType,
       catalogVersion,
       body: { ...body },
@@ -57,8 +69,8 @@ export default function EntryForm() {
     addLedgerEntry(entry);
     toast.success(`Evento ${entry.id} gravado no Ledger`);
     setEventId('');
-    setEntityRef('');
-    setLinearCoord('');
+    setEstaca('');
+    setAfastamento('');
     setBody({});
   };
 
@@ -82,7 +94,6 @@ export default function EntryForm() {
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* Zona 1 - Envelope */}
         <div className="space-y-3 border-l-2 border-primary/40 pl-3">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
             Zona 1 — Envelope (imutável)
@@ -90,7 +101,7 @@ export default function EntryForm() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">ID do Evento</Label>
-              <Input value={eventId} onChange={e => setEventId(e.target.value)} placeholder="EVT-001" className="font-mono" />
+              <Input value={eventId} onChange={e => setEventId(e.target.value)} placeholder="EVT-004" className="font-mono" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Tipo de Incidente</Label>
@@ -107,23 +118,38 @@ export default function EntryForm() {
             <Input
               value={entityRef}
               onChange={e => setEntityRef(e.target.value)}
-              placeholder="PISTA-10R, TAXIWAY-B…"
+              placeholder="PISTA-10R"
               list="entity-suggestions"
               className="font-mono"
             />
-            {entitySuggestions.length > 0 && (
-              <datalist id="entity-suggestions">
-                {entitySuggestions.map(s => <option key={s} value={s} />)}
-              </datalist>
-            )}
+            <datalist id="entity-suggestions">
+              {entitySuggestions.map(s => <option key={s} value={s} />)}
+            </datalist>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Coordenada Linear</Label>
-            <Input value={linearCoord} onChange={e => setLinearCoord(e.target.value)} placeholder="ex: 1450m" className="font-mono" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Estaca (m)</Label>
+              <Input
+                type="number"
+                value={estaca}
+                onChange={e => setEstaca(e.target.value)}
+                placeholder="0 – 3000"
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Afastamento (m)</Label>
+              <Input
+                type="number"
+                value={afastamento}
+                onChange={e => setAfastamento(e.target.value)}
+                placeholder="−75 a +75"
+                className="font-mono"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Zona 2 - Corpo dinâmico */}
         <div className="space-y-3 border-l-2 border-accent/40 pl-3">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
             Zona 2 — Corpo ({catalogVersion} · {incidentType})

@@ -39,7 +39,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [pendingPickCoord, setPendingPickCoord] = useState<GeoCoord | null>(null);
   const [pendingObsDraft, setPendingObsDraft] = useState<ObsDraft | null>(null);
   const [catalogVersion, setCatalogVersion] = useState<CatalogVersion>('v2026.1');
-  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>(INITIAL_LEDGER);
 
   const addLedgerEntry = useCallback((entry: LedgerEntry) => {
     setLedger(prev => [entry, ...prev]);
