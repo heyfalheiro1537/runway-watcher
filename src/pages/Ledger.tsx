@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Database } from 'lucide-react';
-import BrandLogo from '@/components/BrandLogo';
+import { BrandLogo } from '@/components/BrandLogo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppState } from '@/context/AppContext';
 import EntryForm from '@/components/ledger/EntryForm';
