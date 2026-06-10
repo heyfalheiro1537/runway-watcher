@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Database } from 'lucide-react';
+import { Database, Network } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppState } from '@/context/AppContext';
 import EntryForm from '@/components/ledger/EntryForm';
 import ProjectionPanel from '@/components/ledger/ProjectionPanel';
 import LedgerCard from '@/components/ledger/LedgerCard';
+import SubgraphMap from '@/components/ledger/SubgraphMap';
+import { RUNWAY_FEATURE } from '@/data/runwayFeature';
 
 export default function LedgerPage() {
   const { ledger } = useAppState();
@@ -57,24 +59,38 @@ export default function LedgerPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Database size={18} className="text-primary" />
+                  <Network size={18} className="text-primary" />
                   <CardTitle className="text-base">
-                    Grafo Materializado
+                    Subgrafo Materializado
                     <span className="ml-2 text-xs font-mono text-muted-foreground">
                       ({projected.length})
                     </span>
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                  <div className="rounded border border-border bg-muted/40 p-2">
+                    <div className="text-muted-foreground">Nós Feature</div>
+                    <div className="text-base text-primary">1</div>
+                    <div className="text-[9px] text-muted-foreground">{RUNWAY_FEATURE.id}</div>
+                  </div>
+                  <div className="rounded border border-border bg-muted/40 p-2">
+                    <div className="text-muted-foreground">Nós Incidente</div>
+                    <div className="text-base text-accent">{projected.length}</div>
+                    <div className="text-[9px] text-muted-foreground">projetados / {ledger.length} total</div>
+                  </div>
+                </div>
+
+                <SubgraphMap entries={projected} />
+
                 {projected.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                    <Database size={32} strokeWidth={1.2} className="mb-3 opacity-60" />
+                  <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+                    <Database size={28} strokeWidth={1.2} className="mb-2 opacity-60" />
                     <p className="text-sm">Nenhum evento {appliedFilter ? 'na projeção' : 'no ledger'}</p>
-                    <p className="text-xs mt-1">Grave incidentes pelo simulador.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
                     {projected.map(e => <LedgerCard key={e.id} entry={e} />)}
                   </div>
                 )}
