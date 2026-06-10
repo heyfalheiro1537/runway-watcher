@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Airport, InspectionReport, UserRole, GeoCoord, SeverityLevel, LedgerEntry, CatalogVersion } from '@/types';
 import { mockAirports, mockReports } from '@/data/mockData';
+import { INITIAL_LEDGER } from '@/data/runwayFeature';
 
 export interface ObsDraft {
   description: string;

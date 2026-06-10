@@ -29,12 +29,16 @@ export default function LedgerCard({ entry }: { entry: LedgerEntry }) {
           <span>{entry.entityRef}</span>
         </div>
         <div>
-          <span className="text-muted-foreground">coord: </span>
-          <span>{entry.linearCoord}</span>
+          <span className="text-muted-foreground">estaca: </span>
+          <span>{entry.estaca}m</span>
         </div>
-        <div className="col-span-2">
+        <div>
+          <span className="text-muted-foreground">afast: </span>
+          <span>{entry.afastamento}m</span>
+        </div>
+        <div>
           <span className="text-muted-foreground">recordedAt: </span>
-          <span>{format(parseISO(entry.recordedAt), 'yyyy-MM-dd HH:mm:ss')}</span>
+          <span>{format(parseISO(entry.recordedAt), 'HH:mm:ss')}</span>
         </div>
       </div>
 
