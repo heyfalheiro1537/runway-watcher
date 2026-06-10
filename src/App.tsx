@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import MapView from "@/pages/MapView";
 import InspectionForm from "@/pages/InspectionForm";
 import Reports from "@/pages/Reports";
+import Ledger from "@/pages/Ledger";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/map" element={<MapView />} />
             <Route path="/inspect" element={<InspectionForm />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/ledger" element={<Ledger />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />

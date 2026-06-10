@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Map, LayoutDashboard, ClipboardList, Plane } from 'lucide-react';
+import { Map, LayoutDashboard, ClipboardList, Plane, ScrollText } from 'lucide-react';
 import { useAppState } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
   { path: '/map', icon: Map, label: 'Mapa' },
   { path: '/reports', icon: ClipboardList, label: 'Relatórios' },
+  { path: '/ledger', icon: ScrollText, label: 'Ledger' },
 ];
 
 export default function BottomNav() {
